@@ -58,8 +58,8 @@ private:
   double weightMax_ = 1.0;
   std::string collectionModule_;
   std::string outputName_;
-
-  XrayEventCollection* collection_ = nullptr;
+  std::string property_;
+  XrayEventCollection *collection_ = nullptr;
   TH1* histogram_ = nullptr;
 };
 

@@ -27,62 +27,97 @@
 using namespace anlnext;
 namespace unit = anlgeant4::unit;
 
-namespace comptonsoft {
-
-HistogramXrayEventProperties::HistogramXrayEventProperties()
-  : numBins_(31), weightMin_(-0.5), weightMax_(30.5),
-    collectionModule_("XrayEventCollection"), outputName_("weight")
+namespace comptonsoft
 {
-}
 
-ANLStatus HistogramXrayEventProperties::mod_define()
-{
-  define_parameter("num_bins", &mod_class::numBins_);
-  define_parameter("weight_min", &mod_class::weightMin_);
-  define_parameter("weight_max", &mod_class::weightMax_);
-  define_parameter("collection_module", &mod_class::collectionModule_);
-  define_parameter("output_name", &mod_class::outputName_);
-
-  return AS_OK;
-}
-
-ANLStatus HistogramXrayEventProperties::mod_initialize()
-{
-  get_module_NC(collectionModule_, &collection_);
-
-  ANLStatus status = VCSModule::mod_initialize();
-  if (status != AS_OK) {
-    return status;
+  HistogramXrayEventProperties::HistogramXrayEventProperties()
+      : numBins_(31), weightMin_(-0.5), weightMax_(30.5), collectionModule_("XrayEventCollection"), outputName_("weight"), property_("weight")
+  {
   }
 
-  mkdir();
-  const std::string name = "weight";
-  const std::string title = "Weight";
-  histogram_ = new TH1D(name.c_str(), title.c_str(),
-                        numBins_, weightMin_, weightMax_);
+  ANLStatus HistogramXrayEventProperties::mod_define()
+  {
+    define_parameter("num_bins", &mod_class::numBins_);
+    define_parameter("weight_min", &mod_class::weightMin_);
+    define_parameter("weight_max", &mod_class::weightMax_);
+    define_parameter("property", &mod_class::property_);
+    define_parameter("collection_module", &mod_class::collectionModule_);
+    define_parameter("output_name", &mod_class::outputName_);
 
-  return AS_OK;
-}
-
-ANLStatus HistogramXrayEventProperties::mod_analyze()
-{
-  for (const auto& event: collection_->getEvents()) {
-    const double weight = event->Weight();
-    histogram_->Fill(weight);
+    return AS_OK;
   }
 
-  return AS_OK;
-}
+  ANLStatus HistogramXrayEventProperties::mod_initialize()
+  {
+    get_module_NC(collectionModule_, &collection_);
 
-void HistogramXrayEventProperties::drawCanvas(TCanvas* canvas, std::vector<std::string>* filenames)
-{
-  const std::string outputFile = outputName_+".png";
-  canvas->cd();
-  gStyle->SetOptStat("e");
-  gStyle->SetStatH(0.15);
-  histogram_->Draw();
-  canvas->SaveAs(outputFile.c_str());
-  filenames->push_back(outputFile);
-}
+    ANLStatus status = VCSModule::mod_initialize();
+    if (status != AS_OK)
+    {
+      return status;
+    }
+
+    mkdir();
+    const std::string name = property_;
+    const std::string title = property_;
+    histogram_ = new TH1D(name.c_str(), title.c_str(),
+                          numBins_, weightMin_, weightMax_);
+
+    return AS_OK;
+  }
+
+  ANLStatus HistogramXrayEventProperties::mod_analyze()
+  {
+    for (const auto &event : collection_->getEvents())
+    {
+
+      if (property_ == "weight")
+      {
+        const double weight = event->Weight();
+        histogram_->Fill(weight);
+      }
+      else if (property_ == "sumPH")
+      {
+        const double sumPH = event->SumPH();
+        histogram_->Fill(sumPH);
+      }
+      else if (property_ == "pixelX")
+      {
+        const int ix = event->PixelX();
+        histogram_->Fill(ix);
+      }
+      else if (property_ == "pixelY")
+      {
+        const int iy = event->PixelY();
+        histogram_->Fill(iy);
+      }
+      else if (property_ == "rank")
+      {
+        const int rank = event->Rank();
+        histogram_->Fill(rank);
+      }
+      else if (property_ == "angle")
+      {
+        const int angle = event->Angle();
+        histogram_->Fill(angle);
+      }
+      else
+      {
+        return AS_ERROR;
+      }
+    }
+    return AS_OK;
+  }
+
+  void HistogramXrayEventProperties::drawCanvas(TCanvas *canvas, std::vector<std::string> *filenames)
+  {
+    const std::string outputFile = outputName_ + ".png";
+    canvas->cd();
+    gStyle->SetOptStat("e");
+    gStyle->SetStatH(0.15);
+    histogram_->Draw();
+    canvas->SaveAs(outputFile.c_str());
+    filenames->push_back(outputFile);
+  }
 
 } /* namespace comptonsoft */
