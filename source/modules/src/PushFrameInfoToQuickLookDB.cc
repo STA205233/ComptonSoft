@@ -47,12 +47,13 @@ namespace comptonsoft
     define_parameter("period", &mod_class::period_);
     define_parameter("phase", &mod_class::phase_);
     define_parameter("document", &mod_class::document_);
+    define_parameter("directory", &mod_class::directory_);
     return AS_OK;
   }
 
   ANLStatus PushFrameInfoToQuickLookDB::mod_initialize()
   {
-    if (event_collection_module_name != "Dark")
+    if (event_collection_module_name_ != "Dark")
     {
       get_module_NC(event_collection_module_name_, &event_collection_module_);
     }
@@ -95,7 +96,7 @@ namespace comptonsoft
       whole_count_++;
     }
 
-    hsquicklook::DocumentBuilder builder("Detector", document_);
+    hsquicklook::DocumentBuilder builder(directory_, document_);
     const std::time_t t = std::time(nullptr);
     const int64_t ti = static_cast<int64_t>(t) * 64;
     builder.setTI(ti);

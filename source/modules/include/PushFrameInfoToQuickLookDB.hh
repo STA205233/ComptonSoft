@@ -55,7 +55,7 @@ namespace comptonsoft
   private:
     std::string event_collection_module_name_;
     std::string collection_;
-    // std::string directory_;
+    std::string directory_;
     std::string document_;
     int period_ = 1;
     int phase_ = 0;
