@@ -141,6 +141,7 @@ if(CS_USE_HSQUICKLOOK)
     src/PushToQuickLookDB.cc
     src/PushXrayEventToQuickLookDB.cc
     src/PushHistogramToQuickLookDB.cc
+    src/PushFrameInfoToQuickLookDB.cc 
     src/LoadMetaDataFile.cc
     src/ExtractXrayEventImageFromQuickLookDB.cc
     )

@@ -105,6 +105,9 @@
 #include "PushXrayEventToQuickLookDB.hh"
 #endif
 #ifdef USE_HSQUICKLOOK
+#include "PushFrameInfoToQuickLookDB.hh"
+#endif
+#ifdef USE_HSQUICKLOOK
 #include "PushHistogramToQuickLookDB.hh"
 #endif
 #ifdef USE_HSQUICKLOOK
@@ -927,6 +930,15 @@ class PushXrayEventToQuickLookDB : public anlnext::BasicModule
 {
 public:
   PushXrayEventToQuickLookDB();
+};
+
+#endif
+
+#ifdef USE_HSQUICKLOOK
+class PushFrameInfoToQuickLookDB : public anlnext::BasicModule
+{
+public:
+  PushFrameInfoToQuickLookDB();
 };
 
 #endif

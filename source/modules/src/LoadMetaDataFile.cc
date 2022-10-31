@@ -30,56 +30,58 @@
 
 using namespace anlnext;
 
-namespace {
-
-std::chrono::system_clock::time_point convert_datetime(const std::string& datetime, const std::string& format)
+namespace
 {
-  std::tm tm = {};
-  std::stringstream ss(datetime);
-  ss >> std::get_time(&tm, format.c_str());
-  std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-  return tp;
-}
+
+  std::chrono::system_clock::time_point convert_datetime(const std::string &datetime, const std::string &format)
+  {
+    std::tm tm = {};
+    std::stringstream ss(datetime);
+    ss >> std::get_time(&tm, format.c_str());
+    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    return tp;
+  }
 
 } /* anonymous namespace */
 
-
-namespace comptonsoft {
-
-LoadMetaDataFile::LoadMetaDataFile()
-  : data_reader_module_("LoadReducedFrame"),
-    data_file_extension_(".root"),
-    meta_file_extension_(".json")
+namespace comptonsoft
 {
-}
 
-ANLStatus LoadMetaDataFile::mod_define()
-{
-  define_parameter("data_reader_module", &mod_class::data_reader_module_);
-  define_parameter("datafile_extension", &mod_class::data_file_extension_);
-  define_parameter("metafile_extension", &mod_class::meta_file_extension_);
-  
-  return AS_OK;
-}
+  LoadMetaDataFile::LoadMetaDataFile()
+      : data_reader_module_("LoadReducedFrame"),
+        data_file_extension_(".root"),
+        meta_file_extension_(".json")
+  {
+  }
 
-ANLStatus LoadMetaDataFile::mod_initialize()
-{
-  get_module_IFNC(data_reader_module_, &data_reader_);
+  ANLStatus LoadMetaDataFile::mod_define()
+  {
+    define_parameter("data_reader_module", &mod_class::data_reader_module_);
+    define_parameter("datafile_extension", &mod_class::data_file_extension_);
+    define_parameter("metafile_extension", &mod_class::meta_file_extension_);
 
-  return AS_OK;
-}
+    return AS_OK;
+  }
 
-ANLStatus LoadMetaDataFile::mod_analyze()
-{
-  data_filename_ = data_reader_->CurrentFilename();
+  ANLStatus LoadMetaDataFile::mod_initialize()
+  {
+    get_module_IFNC(data_reader_module_, &data_reader_);
 
-  std::string filename = boost::filesystem::path(data_filename_).replace_extension(meta_file_extension_).string();
-  boost::property_tree::ptree pt;
-  boost::property_tree::read_json(filename, pt);
-  temperature_ = pt.get_optional<int>("temperature").get();
-  capture_time_ = convert_datetime(pt.get_optional<std::string>("time").get(), "%Y-%m-%dT%H:%M:%S");
+    return AS_OK;
+  }
 
-  return AS_OK;
-}
+  ANLStatus LoadMetaDataFile::mod_analyze()
+  {
+    data_filename_ = data_reader_->CurrentFilename();
+
+    std::string filename = boost::filesystem::path(data_filename_).replace_extension(meta_file_extension_).string();
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json(filename, pt);
+    temperature_ = pt.get_optional<int>("temperature").get();
+    capture_time_ = convert_datetime(pt.get_optional<std::string>("time").get(), "%Y-%m-%dT%H:%M:%S");
+    // data_size_ = pt.get_optional<std::array>("data_sizes").get();
+    loop_counter_ = pt.get_optional<int>("loop_counter").get();
+    return AS_OK;
+  }
 
 } /* namespace comptonsoft */

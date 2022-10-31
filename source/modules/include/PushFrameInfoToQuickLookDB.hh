@@ -17,59 +17,57 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_LoadMetaDataFile_H
-#define COMPTONSOFT_LoadMetaDataFile_H 1
+#ifndef COMPTONSOFT_PushFrameInfoToQuickLookDB_H
+#define COMPTONSOFT_PushFrameInfoToQuickLookDB_H 1
 
-#include <chrono>
 #include <anlnext/BasicModule.hh>
-#include "LoadReducedFrame.hh"
-#include "VDataReader.hh"
+#include "VCSModule.hh"
+#include "XrayEventCollection.hh"
+#include "LoadMetaDataFile.hh"
+
+namespace hsquicklook
+{
+  class MongoDBClient;
+}
 
 namespace comptonsoft
 {
 
-  /**
-   * LoadReducedFrame
-   *
-   * @author Taihei Watanabe
-   * @date 2021-09-30
-   * @date 2022-02-01 | 1.2 | Hirokazu Odaka | code review
-   */
-  class LoadMetaDataFile : public anlnext::BasicModule
+  class PushFrameInfoToQuickLookDB : public anlnext::BasicModule
   {
-    DEFINE_ANL_MODULE(LoadMetaDataFile, 1.2);
-
+    DEFINE_ANL_MODULE(PushFrameInfoToQuickLookDB, 1.0);
+    // ENABLE_PARALLEL_RUN();
   public:
-    LoadMetaDataFile();
+    PushFrameInfoToQuickLookDB();
 
   protected:
-    LoadMetaDataFile(const LoadMetaDataFile &);
+    PushFrameInfoToQuickLookDB(const PushFrameInfoToQuickLookDB &);
 
   public:
     anlnext::ANLStatus mod_define() override;
     anlnext::ANLStatus mod_initialize() override;
     anlnext::ANLStatus mod_analyze() override;
 
-    int Temperature() const { return temperature_; };
-    std::chrono::system_clock::time_point CaptureTime() const { return capture_time_; };
-    std::string Filename() const { return data_filename_; };
-    int Loop_Counter() const { return loop_counter_; };
-    // int Data_Size() const { return data_size_[0]; };
+  protected:
+    void pushFrameInfoToDB();
 
   private:
-    std::string data_reader_module_;
-    std::string data_file_extension_;
-    std::string meta_file_extension_;
-
-    VDataReader *data_reader_ = nullptr;
-
-    std::string data_filename_ = "";
-    int temperature_ = 0;
-    // std::array<int, 1> data_size_ = {0};
-    int loop_counter_ = 0;
-    std::chrono::system_clock::time_point capture_time_;
+    std::string event_collection_module_name_;
+    std::string collection_;
+    // std::string directory_;
+    std::string document_;
+    int period_ = 1;
+    int phase_ = 0;
+    int count_ = 0;
+    int whole_count_ = 0;
+    float bad_pixel_ratio_ = 0.;
+    int bad_pixel_ = 0;
+    const XrayEventCollection *event_collection_module_ = nullptr;
+    const LoadMetaDataFile *metadata_file_module_ = nullptr;
+    const FrameData *frame_module_ = nullptr;
+    hsquicklook::MongoDBClient *mongodb_ = nullptr;
   };
 
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_LoadMetaDataFile_H */
+#endif /* COMPTONSOFT_PushFrameInfoToQuickLookDB_H */
