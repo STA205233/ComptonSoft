@@ -17,6 +17,10 @@
  *                                                                       *
  *************************************************************************/
 
+/*
+This is for 2022 SPring-8 experiment.
+*/
+
 #include "PushFrameInfoToQuickLookDB.hh"
 
 #include <vector>
@@ -43,15 +47,16 @@ namespace comptonsoft
     define_parameter("period", &mod_class::period_);
     define_parameter("phase", &mod_class::phase_);
     define_parameter("document", &mod_class::document_);
-    // define_parameter("directory", &mod_class::directory_);
     return AS_OK;
   }
 
   ANLStatus PushFrameInfoToQuickLookDB::mod_initialize()
   {
-    get_module_NC(event_collection_module_name_, &event_collection_module_);
+    if (event_collection_module_name != "Dark")
+    {
+      get_module_NC(event_collection_module_name_, &event_collection_module_);
+    }
     get_module_NC("LoadMetaDataFile", &metadata_file_module_);
-    get_module_NC("FrameData", &frame_module_);
 
     if (exist_module("MongoDBClient"))
     {
@@ -69,51 +74,23 @@ namespace comptonsoft
       return AS_OK;
     }
 
-    if (mongodb_)
+    if (mongodb_ && (event_collection_module_name_ != "Dark"))
     {
       pushFrameInfoToDB();
     }
-
+    else if (mongodb_ && (event_collection_module_name_ == "Dark"))
+    {
+      pushFrameInfoToDBForDark();
+    }
     return AS_OK;
   }
 
   void PushFrameInfoToQuickLookDB::pushFrameInfoToDB()
   {
     const XrayEventContainer &events = event_collection_module_->getEvents();
-    const flags_t &disabled_pixels = frame_module_->getDisabledPixels();
-    const int nx = (frame_module_->NumPixelsX());
-    const int ny = (frame_module->NumPixelsY());
-    for (size_t i = 0; i < nx; i++)
-    {
-      for (size_t j = 0; j < ny; j++)
-      {
-        if (disabled_pixels[i][j] == 1)
-        {
-          bad_pixel_++;
-        }
-      }
-    }
-    bad_pixel_ratio = bad_pixel / nx / ny;
-    std::vector<bsoncxx::document::value> documents;
 
     for (const auto &event : events)
     {
-      // documents.push_back(
-      //   bsoncxx::builder::stream::document{}
-      //   << "analysis_id" << analysis_id_
-      //   << "frameID" << event->FrameID()
-      //   << "ix" << event->PixelX()
-      //   << "iy" << event->PixelY()
-      //   << "sumPH" << event->SumPH()
-      //   << "centerPH" << event->CenterPH()
-      //   << "angle" << event->Angle()
-      //   << "weight" << event->Weight()
-      //   << "rank" << event->Rank()
-      //   << "temperature" << metadata_file_module_->Temperature()
-      //   << "capture_time" << bsoncxx::types::b_date(metadata_file_module_->CaptureTime())
-      //   << "filename" << metadata_file_module_->Filename()
-      //   << bsoncxx::builder::stream::finalize
-      //   );
       count_++;
       whole_count_++;
     }
@@ -127,12 +104,10 @@ namespace comptonsoft
     std::string section_name = "Metadata";
     auto section = bsoncxx::builder::stream::document{}
                    << "Loop_counter" << metadata_file_module_->Loop_Counter()
-                   //  << "DataSize" << metadata_file_module_->Data_Size()
                    << "Capture_time" << bsoncxx::types::b_date(metadata_file_module_->CaptureTime())
                    << "Filename" << metadata_file_module_->Filename()
                    << "Count_rate" << count_
                    << "Whole_count" << whole_count_
-                   << "Bad_pixel_ratio" << Bad_pixel_ratio_
                    << bsoncxx::builder::stream::finalize;
     builder.addSection(section_name, section);
 
@@ -143,6 +118,32 @@ namespace comptonsoft
     builder.addSection(section_name, section);
 
     count_ = 0;
+
+    auto document = builder.generate();
+    mongodb_->push(collection_, document);
+  }
+
+  void PushFrameInfoToQuickLookDB::pushFrameInfoToDBForDark()
+  {
+    hsquicklook::DocumentBuilder builder("Detector", document_);
+    const std::time_t t = std::time(nullptr);
+    const int64_t ti = static_cast<int64_t>(t) * 64;
+    builder.setTI(ti);
+    builder.setTimeNow();
+
+    std::string section_name = "Metadata";
+    auto section = bsoncxx::builder::stream::document{}
+                   << "Loop_counter" << metadata_file_module_->Loop_Counter()
+                   << "Capture_time" << bsoncxx::types::b_date(metadata_file_module_->CaptureTime())
+                   << "Filename" << metadata_file_module_->Filename()
+                   << bsoncxx::builder::stream::finalize;
+    builder.addSection(section_name, section);
+
+    section_name = "Temperature";
+    section = bsoncxx::builder::stream::document{}
+              << "Temperature" << metadata_file_module_->Temperature()
+              << bsoncxx::builder::stream::finalize;
+    builder.addSection(section_name, section);
 
     auto document = builder.generate();
     mongodb_->push(collection_, document);

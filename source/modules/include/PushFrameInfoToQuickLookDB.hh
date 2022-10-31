@@ -50,6 +50,7 @@ namespace comptonsoft
 
   protected:
     void pushFrameInfoToDB();
+    void pushFrameInfoToDBForDark();
 
   private:
     std::string event_collection_module_name_;
@@ -60,11 +61,8 @@ namespace comptonsoft
     int phase_ = 0;
     int count_ = 0;
     int whole_count_ = 0;
-    float bad_pixel_ratio_ = 0.;
-    int bad_pixel_ = 0;
     const XrayEventCollection *event_collection_module_ = nullptr;
     const LoadMetaDataFile *metadata_file_module_ = nullptr;
-    const FrameData *frame_module_ = nullptr;
     hsquicklook::MongoDBClient *mongodb_ = nullptr;
   };
 

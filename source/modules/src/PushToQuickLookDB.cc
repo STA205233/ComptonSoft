@@ -46,9 +46,9 @@ ANLStatus PushToQuickLookDB::mod_define()
   define_parameter("document", &mod_class::document_);
   define_parameter("period", &mod_class::period_);
   define_parameter("phase", &mod_class::phase_);
-  
+
   return AS_OK;
-}    
+}
 
 ANLStatus PushToQuickLookDB::mod_initialize()
 {
@@ -76,7 +76,7 @@ ANLStatus PushToQuickLookDB::mod_analyze()
   if (get_loop_index()%period_ != phase_) {
     return AS_OK;
   }
-  
+
   for (auto& module: modules_) {
     module->drawCanvas(canvas_, &fileList_);
   }
@@ -126,7 +126,7 @@ void PushToQuickLookDB::pushImagesToDB()
                                                                    canvas_height_,
                                                                    filename);
   }
-  
+
   auto block = block_open << bsoncxx::builder::stream::finalize;
   builder.addSection(block_name, block);
 
