@@ -1,9 +1,10 @@
-####### CMakeLists.txt for Compton Soft
+# ###### CMakeLists.txt for Compton Soft
 cmake_minimum_required(VERSION 3.20)
 
-### Initial definition of cmake variables
+# ## Initial definition of cmake variables
 set(CMAKE_INSTALL_PREFIX $ENV{HOME} CACHE PATH "install prefix")
 set(CMAKE_BUILD_TYPE Release CACHE STRING "build type")
+
 # set(CMAKE_BUILD_TYPE Debug CACHE STRING "build type")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -W -Wall" CACHE STRING "CXX_FLAGS for debug")
 set(CMAKE_C_FLAGS_DEBUG "-g -W -Wall" CACHE STRING "C_FLAGS for debug")
@@ -12,7 +13,7 @@ set(CMAKE_C_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "C_FLAGS for release")
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-### Definition of project
+# ## Definition of project
 project(ComptonSoft)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MODULE_PATH ${ComptonSoft_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -20,11 +21,15 @@ set(CMAKE_MODULE_PATH ${ComptonSoft_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 message("-- Install destination prefix: ${CMAKE_INSTALL_PREFIX}")
 list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
-### options
-## interface options
+set(VDT_INCLUDE_DIR /opt/homebrew/opt/root/include/root)
+set(VDT_LIBRARY vdt)
+
+# ## options
+# # interface options
 option(CS_USE_RUBY "enable Ruby binding" ON)
 option(CS_USE_EXE "enable standalone executables" OFF)
-## library options
+
+# # library options
 option(CS_USE_GDML "enable GDML" ON)
 option(CS_USE_VIS_QT "enable visualization with Qt" ON)
 option(CS_USE_FITSIO "enable FITS IO" OFF)
@@ -32,10 +37,12 @@ option(CS_USE_HSQUICKLOOK "enable HSQuickLook" OFF)
 option(CS_USE_SIMX "enable SimX compatible simulation" OFF)
 option(CS_USE_VIS "enable visualization with OpenGL" OFF)
 option(CS_USE_SYSTEM_CLHEP "use system-clhep" OFF)
-## install options
+
+# # install options
 option(CS_INSTALL_HEADERS "install all header files" ON)
 option(CS_INSTALL_CMAKE_FILES "install all cmake files" ON)
-## shortcut options
+
+# # shortcut options
 option(CS_ALL "enable all consistent library options" OFF)
 option(CS_ALL_OFF "disable all consistent library options" OFF)
 option(CS_HARD_ALL "enable all library options" OFF)
@@ -70,10 +77,10 @@ set(ANLG4_USE_GDML ${CS_USE_GDML})
 set(ANLG4_USE_VIS ${CS_USE_VIS})
 set(ANLG4_USE_VIS_QT ${CS_USE_VIS_QT})
 
-### include definitions
+# ## include definitions
 include(def_cs)
 
-### subdirectories
+# ## subdirectories
 add_subdirectory(anlgeant4)
 add_subdirectory(source)
 
@@ -87,4 +94,4 @@ endif(USE_RUBY)
 
 add_subdirectory(cmake)
 
-### END
+# ## END
