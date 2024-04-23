@@ -193,7 +193,9 @@ void CustomizedEmLivermorePhysics::ConstructParticle()
 
 void CustomizedEmLivermorePhysics::ConstructProcess()
 {
-  if(verbose > 1) {
+  const G4double StepLimit = 0.002;
+  // const G4double FinalRange = 5
+  if (verbose > 1) {
     G4cout << "### " << GetPhysicsName() << " Construct Processes " << G4endl;
   }
   G4PhysicsListHelper* ph = G4PhysicsListHelper::GetPhysicsListHelper();
@@ -325,7 +327,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
                particleName == "mu-"    ) {
 
       G4MuIonisation* muIoni = new G4MuIonisation();
-      muIoni->SetStepFunction(0.2, 50*um);          
+      muIoni->SetStepFunction(StepLimit, 50 * um);
 
       ph->RegisterProcess(mumsc, particle);
       ph->RegisterProcess(muIoni, particle);
@@ -338,7 +340,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       
       G4hMultipleScattering* msc = new G4hMultipleScattering();
       G4ionIonisation* ionIoni = new G4ionIonisation();
-      ionIoni->SetStepFunction(0.1, 10*um);
+      ionIoni->SetStepFunction(StepLimit, 10*um);
 
       ph->RegisterProcess(msc, particle);
       ph->RegisterProcess(ionIoni, particle);
@@ -348,7 +350,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       
       G4ionIonisation* ionIoni = new G4ionIonisation();
       ionIoni->SetEmModel(new G4IonParametrisedLossModel());
-      ionIoni->SetStepFunction(0.1, 1*um);
+      ionIoni->SetStepFunction(StepLimit, 1*um);
 
       ph->RegisterProcess(hmsc, particle);
       ph->RegisterProcess(ionIoni, particle);
@@ -359,7 +361,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
 
       G4hMultipleScattering* pimsc = new G4hMultipleScattering();
       G4hIonisation* hIoni = new G4hIonisation();
-      hIoni->SetStepFunction(0.2, 50*um);
+      hIoni->SetStepFunction(StepLimit, 50*um);
 
       ph->RegisterProcess(pimsc, particle);
       ph->RegisterProcess(hIoni, particle);
@@ -385,7 +387,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       pmsc->SetEmModel(new G4WentzelVIModel());
 
       G4hIonisation* hIoni = new G4hIonisation();
-      hIoni->SetStepFunction(0.2, 50*um);
+      hIoni->SetStepFunction(StepLimit, 50*um);
 
       ph->RegisterProcess(pmsc, particle);
       ph->RegisterProcess(hIoni, particle);
