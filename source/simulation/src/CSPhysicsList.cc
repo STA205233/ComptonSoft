@@ -51,6 +51,8 @@
 #include "G4ParticleTable.hh"
 #include "G4ChargedGeantino.hh"
 
+#include "G4StepLimiterPhysics.hh"
+
 namespace comptonsoft
 {
 
@@ -155,6 +157,11 @@ CSPhysicsList::CSPhysicsList(CSPhysicsOption option)
   if (option.isRadioactiveDecayEnabled()) {
     this->RegisterPhysics( new G4RadioactiveDecayPhysics );
   }
+
+  // Step limiter
+  G4StepLimiterPhysics* stepLimitPhys = new G4StepLimiterPhysics();
+  stepLimitPhys->SetApplyToAll(true); // activates step limit for ALL particles
+  this->RegisterPhysics(stepLimitPhys);
 }
 
 void CSPhysicsList::ConstructProcess()
