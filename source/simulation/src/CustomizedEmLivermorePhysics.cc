@@ -193,7 +193,7 @@ void CustomizedEmLivermorePhysics::ConstructParticle()
 
 void CustomizedEmLivermorePhysics::ConstructProcess()
 {
-  const G4double StepLimit = 0.002;
+  const G4double StepLimit = e_range_ratio_;
   // const G4double FinalRange = 5
   if (verbose > 1) {
     G4cout << "### " << GetPhysicsName() << " Construct Processes " << G4endl;
@@ -394,6 +394,8 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       ph->RegisterProcess(pb, particle);
       ph->RegisterProcess(pp, particle);
       ph->RegisterProcess(pnuc, particle);
+      
+      std::cout << "StepLimit: " << StepLimit << std::endl;
 
     } else if (particleName == "B+" ||
                particleName == "B-" ||
