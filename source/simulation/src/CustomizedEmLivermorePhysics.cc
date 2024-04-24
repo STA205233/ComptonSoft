@@ -194,7 +194,7 @@ void CustomizedEmLivermorePhysics::ConstructParticle()
 void CustomizedEmLivermorePhysics::ConstructProcess()
 {
   const G4double StepLimit = e_range_ratio_;
-  // const G4double FinalRange = 5
+  const G4double finalRange = e_final_range_;
   if (verbose > 1) {
     G4cout << "### " << GetPhysicsName() << " Construct Processes " << G4endl;
   }
@@ -327,7 +327,8 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
                particleName == "mu-"    ) {
 
       G4MuIonisation* muIoni = new G4MuIonisation();
-      muIoni->SetStepFunction(StepLimit, 50 * um);
+      muIoni->SetStepFunction(StepLimit, finalRange * 0.5);
+      // muIoni->SetStepFunction(StepLimit, 50 * um);
 
       ph->RegisterProcess(mumsc, particle);
       ph->RegisterProcess(muIoni, particle);
@@ -340,7 +341,8 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       
       G4hMultipleScattering* msc = new G4hMultipleScattering();
       G4ionIonisation* ionIoni = new G4ionIonisation();
-      ionIoni->SetStepFunction(StepLimit, 10*um);
+      ionIoni->SetStepFunction(StepLimit, finalRange * 0.1);
+      // ionIoni->SetStepFunction(StepLimit, 10*um);
 
       ph->RegisterProcess(msc, particle);
       ph->RegisterProcess(ionIoni, particle);
@@ -350,7 +352,8 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       
       G4ionIonisation* ionIoni = new G4ionIonisation();
       ionIoni->SetEmModel(new G4IonParametrisedLossModel());
-      ionIoni->SetStepFunction(StepLimit, 1*um);
+      ionIoni->SetStepFunction(StepLimit, finalRange * 0.01);
+      // ionIoni->SetStepFunction(StepLimit, 1*um);
 
       ph->RegisterProcess(hmsc, particle);
       ph->RegisterProcess(ionIoni, particle);
@@ -361,7 +364,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
 
       G4hMultipleScattering* pimsc = new G4hMultipleScattering();
       G4hIonisation* hIoni = new G4hIonisation();
-      hIoni->SetStepFunction(StepLimit, 50*um);
+      hIoni->SetStepFunction(StepLimit, finalRange * 0.5);
 
       ph->RegisterProcess(pimsc, particle);
       ph->RegisterProcess(hIoni, particle);
@@ -373,7 +376,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
 
       G4hMultipleScattering* kmsc = new G4hMultipleScattering();
       G4hIonisation* hIoni = new G4hIonisation();
-      hIoni->SetStepFunction(0.2, 50*um);
+      hIoni->SetStepFunction(0.2, finalRange * 0.5);
 
       ph->RegisterProcess(kmsc, particle);
       ph->RegisterProcess(hIoni, particle);
@@ -387,7 +390,7 @@ void CustomizedEmLivermorePhysics::ConstructProcess()
       pmsc->SetEmModel(new G4WentzelVIModel());
 
       G4hIonisation* hIoni = new G4hIonisation();
-      hIoni->SetStepFunction(StepLimit, 50*um);
+      hIoni->SetStepFunction(StepLimit, finalRange * 0.5);
 
       ph->RegisterProcess(pmsc, particle);
       ph->RegisterProcess(hIoni, particle);
