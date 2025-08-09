@@ -26,6 +26,7 @@
 #include <iostream>
 #include "DetectorHit_sptr.hh"
 #include "VDetectorUnit.hh"
+#include "VLArRecombinationModel.hh"
 #include "PixelID.hh"
 
 namespace comptonsoft {
@@ -284,6 +285,7 @@ private:
   int DepthSensingMode_;
   double DepthResolution_;
   std::tuple<double, double, double> QuenchingFactor_;
+  VLArRecombinationModel *RecombinationModel_=nullptr;
 
   // channels properties
   std::vector<PixelID> PixelIDVector_;
@@ -308,6 +310,7 @@ private:
   VDeviceSimulation(VDeviceSimulation&&) = delete;
   VDeviceSimulation& operator=(const VDeviceSimulation&) = delete;
   VDeviceSimulation& operator=(VDeviceSimulation&&) = delete;
+  void applyRecombinationModel(DetectorHit_sptr &hit, double electric_field);
 };
 
 } /* namespace comptonsoft */

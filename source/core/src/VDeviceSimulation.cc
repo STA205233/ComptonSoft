@@ -26,7 +26,7 @@
 #include "AstroUnits.hh"
 #include "DetectorHit.hh"
 #include "FlagDefinition.hh"
-
+#include "BirksModel.hh"
 namespace unit = anlgeant4::unit;
 
 namespace comptonsoft {
@@ -37,7 +37,8 @@ VDeviceSimulation::VDeviceSimulation()
     QuenchingFactor_{1.0, 0.0, 0.0},
     TimeResolutionFast_(100.0*unit::ns),
     TimeResolutionSlow_(1000.0*unit::ns),
-    pedestalEnabled_(false)
+    pedestalEnabled_(false),
+    RecombinationModel_(new BirksModel())
   {
   }
 
@@ -104,6 +105,7 @@ void VDeviceSimulation::makeDetectorHits()
 void VDeviceSimulation::makeRawDetectorHits()
 {
   for (auto& hit: RawHits_) {
+    applyRecombinationModel(hit, 200);
     insertDetectorHit(hit);
   }
 }
@@ -396,6 +398,23 @@ void VDeviceSimulation::assignLocalPositionError(DetectorHit_sptr hit) const
   const double dy = getVoxelPitchY()*conversionToSigma;
   const double dz = (DepthSensingMode()==1) ? DepthResolution() : (getVoxelPitchZ()*conversionToSigma);
   hit->setLocalPositionError(dx, dy, dz);
+}
+
+void VDeviceSimulation::applyRecombinationModel(DetectorHit_sptr &hit, double electric_field)
+{
+  if (!hit) return;
+  const double edep = hit->EnergyDeposit();
+  if (edep <= 0.0) return;
+  if (!hit->isContinuousProcess()) return;
+  const double length = (hit->PostStepPointPosition() - hit->PreStepPointPosition()).mag();
+  const double let = edep / length;
+  //std::cout << "Applying recombination model: edep = " << edep
+  //<< ", length = " << length << "(" << let << ")" << std::endl;
+  const double let_new = RecombinationModel_->electronLet(let, electric_field);
+  //std::cout << "Recombination model applied: new let = " << let_new << " edep_new = " << let_new * length << std::endl;
+  const double new_edep = std::max(let_new * length, 0.0);
+  hit->setEnergyCharge(new_edep);
+  hit->setEnergy(new_edep);
 }
 
 } /* namespace comptonsoft */

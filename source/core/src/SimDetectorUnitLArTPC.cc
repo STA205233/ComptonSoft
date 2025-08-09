@@ -178,7 +178,6 @@ void SimDetectorUnitLArTPC::printSimulationParameters(std::ostream &os) const {
 
 void SimDetectorUnitLArTPC::applyRecombinationModel(DetectorHit_sptr hit) {
   const double edep = hit->EnergyDeposit();
-  const auto process = hit->Process();
   if (edep <= 0.0) return;
   if (!hit->isContinuousProcess()) return;
   const double length = (hit->PostStepPointPosition() - hit->PreStepPointPosition()).mag();
