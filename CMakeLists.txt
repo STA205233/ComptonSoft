@@ -34,6 +34,7 @@ option(CS_USE_HSQUICKLOOK "enable HSQuickLook" OFF)
 option(CS_USE_SIMX "enable SimX compatible simulation" OFF)
 option(CS_USE_VIS "enable visualization with OpenGL" OFF)
 option(CS_USE_SYSTEM_CLHEP "use system-clhep" OFF)
+option(CS_USE_NEST "enable NEST" OFF)
 ## install options
 option(CS_INSTALL_HEADERS "install all header files" ON)
 option(CS_INSTALL_CMAKE_FILES "install all cmake files" ON)

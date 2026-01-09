@@ -5,6 +5,7 @@ include_directories(include
   ${CLHEP_INC_DIR}
   ${ADD_INC_DIR}
   ${BOOST_INC_DIR}
+  ${NEST_INCLUDE_DIRS}
   )
 
 link_directories(
@@ -113,12 +114,19 @@ set(CS_CORE_CLASSES
   src/BirksModel.cc
   )
 
+if (CS_USE_NEST)
+  set(CS_CORE_CLASSES_NEST
+    src/NestWrapper.cc
+    )
+endif()
+
 add_library(CSCore SHARED
   ${CS_CORE_CLASSES}
+  ${CS_CORE_CLASSES_NEST}
   )
 
 target_link_libraries(CSCore
-  ${ROOT_LIB} ${G4_LIB} ${CLHEP_LIB} ${ADD_LIB} ${BOOST_LIB})
+  ${ROOT_LIB} ${G4_LIB} ${CLHEP_LIB} ${ADD_LIB} ${BOOST_LIB} ${NEST_LIB})
 
 install(TARGETS CSCore LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
