@@ -57,5 +57,9 @@ VRealDetectorUnit* RealDetectorUnitFactory::createDetectorUnitLArTPCPixel()
 {
   return new RealDetectorUnitLArTPCPixel;
 }
+VRealDetectorUnit* RealDetectorUnitFactory::createDetectorUnitNanoGRAMS()
+{
+  return new RealDetectorUnitLArTPCPixel; // for now, use the same as LArTPCPixel
+}
 
 } /* namespace comptonsoft */

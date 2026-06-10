@@ -24,6 +24,7 @@
 #include "SimDetectorUnit3DVoxel.hh"
 #include "SimDetectorUnitLArTPC.hh"
 #include "SimDetectorUnitLArTPCPixel.hh"
+#include "SimDetectorUnitNanoGRAMS.hh"
 #include "MultiChannelData.hh"
 
 namespace comptonsoft {
@@ -55,5 +56,9 @@ VRealDetectorUnit* SimDetectorUnitFactory::createDetectorUnitLArTPC()
 VRealDetectorUnit* SimDetectorUnitFactory::createDetectorUnitLArTPCPixel()
 {
   return new SimDetectorUnitLArTPCPixel;
+}
+VRealDetectorUnit* SimDetectorUnitFactory::createDetectorUnitNanoGRAMS()
+{
+  return new SimDetectorUnitNanoGRAMS;
 }
 } /* namespace comptonsoft */

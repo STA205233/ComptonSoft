@@ -17,30 +17,41 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_SimDetectorUnitFactory_H
-#define COMPTONSOFT_SimDetectorUnitFactory_H 1
+#ifndef COMPTONSOFT_SimDetectorUnitVATA_H
+#define COMPTONSOFT_SimDetectorUnitVATA_H 1
 
-#include "VDetectorUnitFactory.hh"
+#include "SimDetectorUnitLArTPCPixel.hh"
+
+class TH3D;
 
 namespace comptonsoft {
 
 /**
- * An abstract factory class for real detector units.
- * @author Hirokazu Odaka
- * @date 2014-11-14
+ * A class of a VATA detector unit including device simulations.
+ * @author Shota Arai
+ * @date 2026-06-08
  */
-class SimDetectorUnitFactory : public VDetectorUnitFactory
+class SimDetectorUnitNanoGRAMS
+  : public SimDetectorUnitLArTPCPixel
 {
 public:
-  VRealDetectorUnit* createDetectorUnit2DPixel() override;
-  VRealDetectorUnit* createDetectorUnit2DStrip() override;
-  VRealDetectorUnit* createDetectorUnitScintillator() override;
-  VRealDetectorUnit* createDetectorUnit3DVoxel() override;
-  VRealDetectorUnit* createDetectorUnitLArTPC() override;
-  VRealDetectorUnit* createDetectorUnitLArTPCPixel() override;
-  VRealDetectorUnit* createDetectorUnitNanoGRAMS() override;
-};
+  SimDetectorUnitNanoGRAMS();
+  virtual ~SimDetectorUnitNanoGRAMS();
 
+  void initializeEvent() override;
+
+  void printSimulationParameters(std::ostream& os) const override;
+  void prepareForTimingProcess() override;
+  void makeDetectorHitsAtTime(double time_triggered, int time_group) override;
+  
+protected:
+  
+private:
+  void sortHitsInTimeOrder(std::list<DetectorHit_sptr>& hits);
+  void performTriggerDiscrimination();
+  void mergeHitsIfCoincident(double time_window, std::list<DetectorHit_sptr>& hits);
+  
+};
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_SimDetectorUnitFactory_H */
+#endif /* COMPTONSOFT_SimDetectorUnitVATA_H */

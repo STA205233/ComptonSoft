@@ -44,6 +44,9 @@ VRealDetectorUnit* VDetectorUnitFactory::createDetectorUnit(const std::string& t
   else if (type=="LArTPCPixel") {
     detector = createDetectorUnitLArTPCPixel();
   }
+  else if (type=="NanoGRAMS") {
+    detector = createDetectorUnitNanoGRAMS();
+  }
 
   return detector;
 }

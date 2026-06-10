@@ -72,9 +72,9 @@ protected:
   int SizeOfTable() const override;
   PixelID TableIndexToPixelID(int index) const override;
   void checkBranchingGamma();
+  void simulatePulseHeights() override;
 
 private:
-  void simulatePulseHeights() override;
   bool usingSymmetry_ = true;
   TH3D *CCEMap_;
   TH3D *WPMap_;

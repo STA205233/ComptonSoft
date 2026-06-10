@@ -32,22 +32,27 @@ void LArTPCDeviceSimulation::printSimulationParameters(std::ostream &os) const {
   os << "  dEdx mode: " << (dEdxMode() == 0 ? "from step information" : (dEdxMode() == 1 ? "from kinetic energy" : "unknown")) << "\n";
   os << "  dEdx spline: " << (dedxSpline_ ? dedxSpline_->GetName() : "not set") << "\n";
 }
+
+double LArTPCDeviceSimulation::calculateDriftTime(double z) const {
+  if (driftVelocity_ <= 0.0) {
+    throw std::runtime_error("LArTPCDeviceSimulation::calculateDriftTime: Drift velocity is not set or invalid.");
+  }
+  double zAnode;
+  if (isUpSideAnode()) {
+    zAnode = 0.5 * getThickness();
+  }
+  else {
+    zAnode = -0.5 * getThickness();
+  }
+  return std::abs((zAnode - z) / driftVelocity_);
+}
+
 double LArTPCDeviceSimulation::DiffusionSigmaAnode3D(double z, double &longitudinal, double &transverse) {
   if (DiffusionMode() == 3) { // Calculate from drift time and diffusion coefficients
-    double zAnode;
-    if (isUpSideAnode()) {
-      zAnode = 0.5 * getThickness();
-    }
-    else {
-      zAnode = -0.5 * getThickness();
-    }
-    if (driftVelocity_ <= 0.0) {
-      throw std::runtime_error("LArTPCDeviceSimulation::DiffusionSigmaAnode3D: Drift velocity is not set or invalid.");
-    }
     if (longitudinalDiffusionCoefficient_ < 0.0 || transverseDiffusionCoefficient_ < 0.0) {
       throw std::runtime_error("LArTPCDeviceSimulation::DiffusionSigmaAnode3D: Diffusion coefficients are not set or invalid.");
     }
-    const double t = std::abs((zAnode - z) / driftVelocity_);
+    const double t = calculateDriftTime(z);
     const double sigma_t = std::sqrt(2. * transverseDiffusionCoefficient_ * t) * DiffusionSpreadFactorAnode();
     const double sigma_l = std::sqrt(2. * longitudinalDiffusionCoefficient_ * t) * DiffusionSpreadFactorAnode();
     longitudinal = sigma_l;

@@ -44,6 +44,7 @@ public:
   virtual VRealDetectorUnit* createDetectorUnit3DVoxel() = 0;
   virtual VRealDetectorUnit* createDetectorUnitLArTPC() = 0;
   virtual VRealDetectorUnit* createDetectorUnitLArTPCPixel() = 0;
+  virtual VRealDetectorUnit* createDetectorUnitNanoGRAMS() = 0;
 
 private:
   VDetectorUnitFactory(const VDetectorUnitFactory&) = delete;

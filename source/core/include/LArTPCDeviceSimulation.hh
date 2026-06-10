@@ -41,6 +41,8 @@ public:
   int dEdxMode() const { return dedxMode_; }
   void setdEdxMode(int mode) { dedxMode_ = mode; }
 
+  double calculateDriftTime(double z) const;
+
   void makeRawDetectorHits() override;
   const VLArRecombinationModel* recombinationModel() const override { return recombinationModel_.get(); }
 

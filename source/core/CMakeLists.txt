@@ -55,6 +55,7 @@ set(CS_CORE_CLASSES
   src/SimDetectorUnit3DVoxel.cc
   src/SimDetectorUnitLArTPC.cc
   src/SimDetectorUnitLArTPCPixel.cc
+  src/SimDetectorUnitNanoGRAMS.cc
   src/WeightingPotentialPixel.cc
   src/WeightingPotentialStrip.cc
   ### detector unit factory
