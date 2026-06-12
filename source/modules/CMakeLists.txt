@@ -96,6 +96,10 @@ set(CS_MODULES
   src/CorrectRecombination.cc
   src/SelectTime.cc
   src/FilterByGoodTimeIntervals.cc
+  src/SetEnergy.cc
+  src/SetPosition.cc
+  src/NumHitsInDetectorFilter.cc
+  src/EliminateLowEnergyHits.cc
   ### analysis ROOT trees & histograms
   src/WriteHitTree.cc
   src/ReadHitTree.cc
