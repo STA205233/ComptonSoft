@@ -75,11 +75,6 @@ void SimDetectorUnitNanoGRAMS::makeDetectorHitsAtTime(double time_triggered, int
   using HitType = DetectorHit_sptr;
   auto& SimulatedHits = getSimulatedHits();
   sortHitsInTimeOrder(SimulatedHits);
-  for (auto& hit : SimulatedHits) {
-   std::cout << boost::format("Simulated hit: time=%.2f ns, energy=%.2f keV, pixel=(%d, %d)")
-     % (hit->Time() / unit::ns) % (hit->Energy() / unit::keV) % hit->Pixel().X() % hit->Pixel().Y()
-     << std::endl;
-  }
   const double time_start = time_triggered - 0.5*TimingResolutionForEnergyMeasurement();
   const double time_end   = time_triggered + 0.5*TimingResolutionForEnergyMeasurement();
   const auto itStart = std::find_if(std::begin(SimulatedHits),
