@@ -17,67 +17,51 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
- */
 
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#ifndef COMPTONSOFT_NanoGRAMSFFTFilterImpl_H
+#define COMPTONSOFT_NanoGRAMSFFTFilterImpl_H 1
 
-#include <array>
-#include <cstdint>
-#include <vector>
-
-#include "NanoGRAMSEvent.hh"
-
-class TTree;
+#include "NanoGRAMSFFTConversion.hh"
+#include "NanoGRAMSVLightWaveformFilter.hh"
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-struct TPCTreeLayout
-{
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
-};
-
-class TPCTreeBuffer
+template <typename ParamType>
+class FFTFilterImpl: public VLightWaveformFilter
 {
 public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
+  FFTFilterImpl() = default;
+  virtual ~FFTFilterImpl() = default;
+  FFTFilterImpl(const FFTFilterImpl& r)
+    : VLightWaveformFilter(r), fftConversion_(nullptr), param_(r.param_) {}
 
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
-
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
+  std::shared_ptr<TH1D> Exec(std::shared_ptr<TH1D> signal_hist) override;
+  void SetParam(const ParamType& param) { param_ = param; }
 
 private:
-  void bindBranches(TTree* tpc_tree);
+  void ApplyFilter();
 
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  std::unique_ptr<NanoGRAMSFFTConversion> fftConversion_ = nullptr;
+  ParamType param_;
 };
+
+template <typename ParamType>
+std::shared_ptr<TH1D> FFTFilterImpl<ParamType>::Exec(std::shared_ptr<TH1D> signal_hist)
+{
+  if (!fftConversion_) {
+    fftConversion_ = std::make_unique<NanoGRAMSFFTConversion>();
+  }
+  fftConversion_->SetHist(signal_hist.get());
+  fftConversion_->ExecFFT();
+  ApplyFilter();
+  fftConversion_->ExecFFTInverse();
+  return fftConversion_->GetHistBack();
+}
 
 } /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSFFTFilterImpl_H */

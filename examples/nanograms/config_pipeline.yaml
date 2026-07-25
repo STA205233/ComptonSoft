@@ -12,6 +12,15 @@ light:
     pre_roi_window_us: 1.0
     post_roi_window_us: 5.0
     out_roi_peak_thr_mV: 15.0
+    pedestal_correction: false
+    pedestal_range_min: -100.0
+    pedestal_range_max: 0.0
+    digitizer_offset_correction: false
+    digitizer_offset_range_start_index: 0
+    digitizer_offset_range_stop_index: 100
+    fft_filter: false
+    fft_low_frequency: 0.0
+    fft_high_frequency: 0.1
 charge:
     noise_th_kev: 18.0
     clustering_pix_range: [1, 3]

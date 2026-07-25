@@ -17,67 +17,44 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
- */
 
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveform_H
+#define COMPTONSOFT_NanoGRAMSLightWaveform_H 1
 
-#include <array>
-#include <cstdint>
+#include "DppListDataDefinition.hh"
 #include <vector>
+#include <cstdint>
 
-#include "NanoGRAMSEvent.hh"
-
-class TTree;
+namespace ngutil {
+class DppListDataDefinition;
+}
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-struct TPCTreeLayout
+struct LightWaveform
 {
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
+  std::vector<double> values;
+  double xlow_us = 0.0;
+  double xhigh_us = 0.0;
 };
 
-class TPCTreeBuffer
+class TPCTreeBuffer;
+
+struct LightWaveformView
 {
-public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
-
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
-
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
-
-private:
-  void bindBranches(TTree* tpc_tree);
-
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  const int16_t* samples = nullptr;
+  int length = 0;
+  int wave_compress = 1;
 };
+
+LightWaveformView viewFromTPCTree(const TPCTreeBuffer& buf, int light_ch);
+LightWaveformView viewFromDppListHit(const ngUtil::DppListDataDefinition& hit);
+
 
 } /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSStoredLightWaveform_H */

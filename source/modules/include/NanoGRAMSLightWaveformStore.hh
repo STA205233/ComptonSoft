@@ -17,67 +17,43 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
- */
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveformStore_hh
+#define COMPTONSOFT_NanoGRAMSLightWaveformStore_hh 1
 
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#include <anlnext/BasicModule.hh>
 
 #include <array>
 #include <cstdint>
 #include <vector>
 
 #include "NanoGRAMSEvent.hh"
-
-class TTree;
+#include "NanoGRAMSLightWaveform.hh"
 
 namespace comptonsoft
 {
-namespace grams
-{
 
-struct TPCTreeLayout
+class NanoGRAMSLightWaveformStore : public anlnext::BasicModule
 {
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
-};
+  DEFINE_ANL_MODULE(NanoGRAMSLightWaveformStore, 1.0);
 
-class TPCTreeBuffer
-{
 public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
+  NanoGRAMSLightWaveformStore();
+  ~NanoGRAMSLightWaveformStore() override;
 
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
+  anlnext::ANLStatus mod_analyze() override;
 
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
+  void push(int64_t raw_event_id, int light_ch, grams::LightWaveform waveform);
+
+  bool isValid(int light_ch) const { return valid_[light_ch]; }
+  const grams::LightWaveform& waveform(int light_ch) const { return stored_[light_ch]; }
+  int64_t currentRawEventId() const { return rawEventId_; }
 
 private:
-  void bindBranches(TTree* tpc_tree);
-
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  std::array<grams::LightWaveform, NUM_CH_DPP_MAX> stored_{};
+  std::array<bool, NUM_CH_DPP_MAX> valid_{};
+  int64_t rawEventId_ = -1;
 };
 
-} /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSLightWaveformStore_hh */

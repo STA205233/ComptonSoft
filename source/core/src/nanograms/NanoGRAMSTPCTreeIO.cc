@@ -186,6 +186,7 @@ void TPCTreeBuffer::bindBranches(TTree* tpc_tree)
   tpc_tree->SetBranchAddress("unixtime",      unixtime.data());
   tpc_tree->SetBranchAddress("waveform",      waveform.data());
   tpc_tree->SetBranchAddress("wave_compress", wave_compress.data());
+  tpc_tree->SetBranchAddress("wave_num",      wave_num.data());
   tpc_tree->SetBranchAddress("registered",    registered_channels.data());
   tpc_tree->SetBranchAddress("error_flags",   &error_flags);
 }

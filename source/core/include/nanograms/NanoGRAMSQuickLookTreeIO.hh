@@ -69,7 +69,7 @@ private:
 
   std::filesystem::path  output_path_;
   std::unique_ptr<TFile> file_;
-  std::unique_ptr<TTree> quicklook_tree_;
+  TTree* quicklook_tree_ = nullptr;
   const TPCProperty& tpc_property_;
   bool save_waveforms_ = true;
   int waveform_len_ = 0;

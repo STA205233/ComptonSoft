@@ -60,6 +60,9 @@ public:
     return -1;
   }
   int64_t currentRawEventId() const { return current_raw_event_id_; }
+  const grams::TPCTreeBuffer& currentBuffer() const { return tpc_tree_reader_->currentBuffer(); }
+  const grams::Config& config() const { return cfg_; }
+  const grams::LightStatus& currentLightStatus() const { return tpc_tree_reader_->currentLightStatus(); }
   int32_t runId() const { return run_id_; }
   uint32_t currentUnixTime() const { return current_unix_time_; }
   const std::vector<grams::RawFECHit>& currentEventHits() const
@@ -104,6 +107,9 @@ private:
   uint32_t current_unix_time_ = 0;
   bool use_event_time_gain_ = false;
   std::vector<grams::RawFECHit> current_event_hits_;
+
+  void setEvs(grams::TPCEventType eventType, size_t num_hits);
+  void defineEvs();
 };
 
 } /* namespace comptonsoft */

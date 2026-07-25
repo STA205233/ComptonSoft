@@ -30,6 +30,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "NanoGRAMSConfig.hh"
 #include "NanoGRAMSTPCTreeIO.hh"
@@ -59,6 +60,8 @@ struct LightStatus
   bool cosmic = false;
   bool pileup_pre_roi = false;
   bool pileup_post_roi = false;
+  std::array<std::vector<double>, NUM_CH_DPP_MAX> corrected_waveform{};
+  std::array<bool, NUM_CH_DPP_MAX> corrected_waveform_valid{};
 
   bool hasPileup() const
   {

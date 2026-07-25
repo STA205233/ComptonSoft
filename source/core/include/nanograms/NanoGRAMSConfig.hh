@@ -66,6 +66,19 @@ struct Config
   std::string light_waveform_analysis = "average";
   LightEventSelectionMode light_event_selection_mode = LightEventSelectionMode::GammaRequired;
   bool use_light_for_event_selection = true;
+
+  bool light_pedestal_correction = false;
+  double light_pedestal_range_min = -100.0;
+  double light_pedestal_range_max = 0.0;
+
+  bool light_digitizer_offset_correction = false;
+  int light_digitizer_offset_range_start_index = 0;
+  int light_digitizer_offset_range_stop_index = 0;
+
+  bool light_fft_filter = false;
+  double light_fft_low_frequency = 0.0;
+  double light_fft_high_frequency = 0.0;
+
   std::map<int, std::vector<int>> core_exclude_pix;
 };
 

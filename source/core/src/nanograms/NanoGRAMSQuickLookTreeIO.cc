@@ -88,7 +88,6 @@ QuickLookTreeOutputWriter::QuickLookTreeOutputWriter(
     bool save_waveforms)
     : output_path_(prepareOutputPath(output_file_path)),
       file_(std::make_unique<TFile>(output_path_.string().c_str(), "RECREATE")),
-      quicklook_tree_(std::make_unique<TTree>(kQuickLookTreeName, kQuickLookTreeName)),
       tpc_property_(tpc_property),
       save_waveforms_(save_waveforms),
       waveform_len_(first_tpc_tree_buffer.layout().waveform_len),
@@ -108,7 +107,7 @@ QuickLookTreeOutputWriter::QuickLookTreeOutputWriter(
   if (save_waveforms_) {
     waveform_.assign(waveform_num_channels_ * waveform_len_, 0);
   }
-  quicklook_tree_->SetDirectory(nullptr);
+  quicklook_tree_ = new TTree(kQuickLookTreeName, kQuickLookTreeName);
   bindBranches();
 }
 

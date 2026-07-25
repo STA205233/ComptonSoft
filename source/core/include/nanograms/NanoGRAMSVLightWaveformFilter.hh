@@ -17,67 +17,28 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
- */
 
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveformFilter_H
+#define COMPTONSOFT_NanoGRAMSLightWaveformFilter_H 1
 
-#include <array>
-#include <cstdint>
-#include <vector>
+#include <memory>
 
-#include "NanoGRAMSEvent.hh"
-
-class TTree;
+#include "TH1.h"
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-struct TPCTreeLayout
-{
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
-};
-
-class TPCTreeBuffer
+class VLightWaveformFilter
 {
 public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
-
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
-
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
-
-private:
-  void bindBranches(TTree* tpc_tree);
-
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  VLightWaveformFilter() = default;
+  virtual ~VLightWaveformFilter() = default;
+  virtual std::shared_ptr<TH1D> Exec(std::shared_ptr<TH1D> signal_hist) = 0;
 };
 
 } /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSLightWaveformFilter_H */

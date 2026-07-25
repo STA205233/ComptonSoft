@@ -121,6 +121,10 @@ set(CS_CORE_CLASSES
   src/nanograms/NanoGRAMSCalibrationData.cc
   src/nanograms/NanoGRAMSHitCalibrator.cc
   src/nanograms/NanoGRAMSLightAnalysis.cc
+  src/nanograms/NanoGRAMSLightWaveform.cc
+  src/nanograms/NanoGRAMSLightWaveformCorrection.cc
+  src/nanograms/NanoGRAMSLightWaveformPlotBuilder.cc
+  src/nanograms/NanoGRAMSFFTConversion.cc
   src/nanograms/NanoGRAMSQuickLookTreeIO.cc
   src/nanograms/NanoGRAMSTPCTreeIO.cc
   src/nanograms/NanoGRAMSTPCDataProcessor.cc

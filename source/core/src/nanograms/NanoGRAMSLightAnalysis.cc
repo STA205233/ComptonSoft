@@ -20,6 +20,8 @@
 #include "NanoGRAMSLightAnalysis.hh"
 
 #include "AstroUnits.hh"
+#include "NanoGRAMSLightWaveformCorrection.hh"
+#include "NanoGRAMSLightWaveform.hh"
 
 #include <algorithm>
 #include <cstdint>
@@ -135,19 +137,34 @@ void validateAverageAnalysisGroups(const TPCTreeBuffer& tpc_tree_buffer,
   }
 }
 
-double lightVoltageAtSample(const Config& cfg,
-                            const TPCTreeBuffer& tpc_tree_buffer,
-                            int light_ch,
-                            int raw_idx)
+std::vector<double> lightVoltageWaveform(const Config& cfg,
+                                         const TPCTreeBuffer& tpc_tree_buffer,
+                                         int light_ch)
 {
-  const int waveform_len = tpc_tree_buffer.layout().waveform_len;
-  const int waveform_slot = tpc_tree_buffer.waveformSlotForDPPChannel(light_ch);
-  if (waveform_slot < 0) {
-    return std::numeric_limits<double>::quiet_NaN() * unit::volt;
+  const LightWaveformView view = viewFromTPCTree(tpc_tree_buffer, light_ch);
+  if (!view.samples || view.length <= 0) {
+    return {};
   }
-  const int waveform_offset = waveform_slot * waveform_len;
-  return static_cast<double>(tpc_tree_buffer.waveform[waveform_offset + raw_idx]) *
-         cfg.adc2mv * (unit::volt / 1000.0);
+
+  std::vector<double> waveform(view.samples, view.samples + view.length);
+
+  if (cfg.light_pedestal_correction) {
+    correctPedestal(waveform, cfg.light_pedestal_range_min, cfg.light_pedestal_range_max);
+  }
+  if (cfg.light_digitizer_offset_correction) {
+    correctDigitizerOffset(waveform, view.wave_compress,
+                           cfg.light_digitizer_offset_range_start_index,
+                           cfg.light_digitizer_offset_range_stop_index);
+  }
+  if (cfg.light_fft_filter) {
+    applySimpleFFTFilter(waveform, static_cast<double>(view.wave_compress),
+                         cfg.light_fft_low_frequency, cfg.light_fft_high_frequency);
+  }
+
+  for (double& sample : waveform) {
+    sample = sample * cfg.adc2mv * (unit::volt / 1000.0);
+  }
+  return waveform;
 }
 
 void updateLightPeaksByIndex(LightPeaks& peaks,
@@ -188,13 +205,16 @@ void updatePileupLightStatusFromPeaks(LightStatus& status,
       status.pileup_post_roi || (peaks.post_roi_peak > cfg.out_roi_peak_thr);
 }
 
-LightPeaks analyzeSingleLightChannel(const Config& cfg,
-                                     const TPCTreeBuffer& tpc_tree_buffer,
+LightPeaks analyzeSingleLightChannel(const std::array<std::vector<double>, NUM_CH_DPP_MAX>& waveforms,
                                      const LightTimingState& light_timing,
                                      int light_ch)
 {
   LightPeaks peaks;
-  const int waveform_len = tpc_tree_buffer.layout().waveform_len;
+  const std::vector<double>& waveform = waveforms[light_ch];
+  if (waveform.empty()) {
+    return peaks;
+  }
+
   const int pre_pileup_start_index =
       light_timing.pre_pileup_start_index[light_ch];
   const int pre_pileup_stop_index =
@@ -204,20 +224,19 @@ LightPeaks analyzeSingleLightChannel(const Config& cfg,
   const int post_pileup_stop_index =
       light_timing.post_pileup_stop_index[light_ch];
 
-  for (int raw_idx = 0; raw_idx < waveform_len; ++raw_idx) {
+  for (int raw_idx = 0; raw_idx < static_cast<int>(waveform.size()); ++raw_idx) {
     updateLightPeaksByIndex(peaks,
                             raw_idx,
                             pre_pileup_start_index,
                             pre_pileup_stop_index,
                             post_pileup_start_index,
                             post_pileup_stop_index,
-                            lightVoltageAtSample(cfg, tpc_tree_buffer, light_ch, raw_idx));
+                            waveform[raw_idx]);
   }
   return peaks;
 }
 
-LightPeaks analyzeAverageLightWaveform(const Config& cfg,
-                                       const TPCTreeBuffer& tpc_tree_buffer,
+LightPeaks analyzeAverageLightWaveform(const std::array<std::vector<double>, NUM_CH_DPP_MAX>& waveforms,
                                        const LightTimingState& light_timing,
                                        const std::vector<int>& valid_channels)
 {
@@ -226,7 +245,11 @@ LightPeaks analyzeAverageLightWaveform(const Config& cfg,
     return peaks;
   }
 
-  const int waveform_len = tpc_tree_buffer.layout().waveform_len;
+  if (waveforms[valid_channels.front()].empty()) {
+    return peaks;
+  }
+  const int waveform_len = static_cast<int>(waveforms[valid_channels.front()].size());
+
   const int reference_ch = valid_channels.front();
   const int pre_pileup_start_index =
       light_timing.pre_pileup_start_index[reference_ch];
@@ -240,7 +263,7 @@ LightPeaks analyzeAverageLightWaveform(const Config& cfg,
   for (int raw_idx = 0; raw_idx < waveform_len; ++raw_idx) {
     double voltage_sum = 0.0;
     for (const int light_ch : valid_channels) {
-      voltage_sum += lightVoltageAtSample(cfg, tpc_tree_buffer, light_ch, raw_idx);
+      voltage_sum += waveforms[light_ch][raw_idx];
     }
     updateLightPeaksByIndex(peaks,
                             raw_idx,
@@ -262,8 +285,7 @@ void mergeLightPeaks(LightPeaks& merged_peaks, const LightPeaks& peaks)
       std::max(merged_peaks.post_roi_peak, peaks.post_roi_peak);
 }
 
-LightPeaks analyzeEachLightChannel(const Config& cfg,
-                                   const TPCTreeBuffer& tpc_tree_buffer,
+LightPeaks analyzeEachLightChannel(const std::array<std::vector<double>, NUM_CH_DPP_MAX>& waveforms,
                                    const LightTimingState& light_timing,
                                    const std::vector<int>& valid_channels)
 {
@@ -271,26 +293,24 @@ LightPeaks analyzeEachLightChannel(const Config& cfg,
   for (const int light_ch : valid_channels) {
     mergeLightPeaks(
         merged_peaks,
-        analyzeSingleLightChannel(cfg, tpc_tree_buffer, light_timing, light_ch));
+        analyzeSingleLightChannel(waveforms, light_timing, light_ch));
   }
   return merged_peaks;
 }
 
 LightPeaks analyzeLightChannelGroup(const Config& cfg,
-                                    const TPCTreeBuffer& tpc_tree_buffer,
+                                    const std::array<std::vector<double>, NUM_CH_DPP_MAX>& waveforms,
                                     const LightTimingState& light_timing,
                                     const std::vector<int>& valid_channels)
 {
   if (cfg.light_waveform_analysis == "average") {
-    return analyzeAverageLightWaveform(cfg,
-                                       tpc_tree_buffer,
+    return analyzeAverageLightWaveform(waveforms,
                                        light_timing,
                                        valid_channels);
   }
 
   if (cfg.light_waveform_analysis == "each_channel") {
-    return analyzeEachLightChannel(cfg,
-                                   tpc_tree_buffer,
+    return analyzeEachLightChannel(waveforms,
                                    light_timing,
                                    valid_channels);
   }
@@ -341,12 +361,24 @@ LightStatus analyzeLightEvent(const Config& cfg,
                                   valid_pileup_channels);
   }
 
+  std::vector<int> all_channels = valid_general_channels;
+  all_channels.insert(all_channels.end(), valid_pileup_channels.begin(), valid_pileup_channels.end());
+  std::sort(all_channels.begin(), all_channels.end());
+  all_channels.erase(std::unique(all_channels.begin(), all_channels.end()), all_channels.end());
+
+  std::array<std::vector<double>, NUM_CH_DPP_MAX> waveforms{};
+  for (const int light_ch : all_channels) {
+    waveforms[light_ch] = lightVoltageWaveform(cfg, tpc_tree_buffer, light_ch);
+    status.corrected_waveform_valid[light_ch] = !waveforms[light_ch].empty();
+  }
+  status.corrected_waveform = waveforms;
+
   if (status.general_valid) {
     updateGeneralLightStatusFromPeaks(
         status,
         cfg,
         analyzeLightChannelGroup(cfg,
-                                 tpc_tree_buffer,
+                                 waveforms,
                                  light_timing,
                                  valid_general_channels));
   }
@@ -356,7 +388,7 @@ LightStatus analyzeLightEvent(const Config& cfg,
         status,
         cfg,
         analyzeLightChannelGroup(cfg,
-                                 tpc_tree_buffer,
+                                 waveforms,
                                  light_timing,
                                  valid_pileup_channels));
   }

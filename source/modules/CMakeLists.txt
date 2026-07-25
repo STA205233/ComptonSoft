@@ -127,6 +127,18 @@ set(CS_MODULES
   ### others
   src/QuickAnalysisForDSD.cc
   src/NanoGRAMSHitExtraction.cc
+  src/NanoGRAMSLightWaveformStore.cc
+  src/NanoGRAMSLightWaveformQuery.cc
+  src/NanoGRAMSMakeLightWaveform.cc
+  src/NanoGRAMSWriteLightWaveform.cc
+  src/NanoGRAMSLightWaveformStage.cc
+  src/NanoGRAMSCorrectPedestal.cc
+  src/NanoGRAMSCorrectDigitizerOffset.cc
+  src/NanoGRAMSApplyLightFFTFilter.cc
+  src/NanoGRAMSIntegralLightWaveform.cc
+  src/NanoGRAMSHistogram1D.cc
+  src/NanoGRAMSHistogram2D.cc
+  src/NanoGRAMSPlotStacked2DHistogram.cc
   src/NanoGRAMSCalibration.cc
   )
 

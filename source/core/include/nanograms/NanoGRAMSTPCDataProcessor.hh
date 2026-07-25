@@ -146,6 +146,7 @@ public:
   const TPCTreeBuffer& currentBuffer() const { return tpc_tree_buffer_; }
   TPCEventType currentEventType() const { return current_event_type_; }
   uint32_t currentUnixTime() const { return current_unix_time_; }
+  const LightStatus& currentLightStatus() const { return currentLightStatus_; }
 
 private:
   Config cfg_;
@@ -157,6 +158,7 @@ private:
   int64_t current_entry_ = 0;
   TPCEventType current_event_type_ = TPCEventType::Error;
   uint32_t current_unix_time_ = 0;
+  LightStatus currentLightStatus_;
 };
 
 class RawHitTreeOutputWriter

@@ -217,6 +217,38 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
     cfg.use_light_for_event_selection = true;
   }
 
+  if (nodeLight["pedestal_correction"]) {
+    cfg.light_pedestal_correction = nodeLight["pedestal_correction"].as<bool>();
+  }
+  if (nodeLight["pedestal_range_min"]) {
+    cfg.light_pedestal_range_min = nodeLight["pedestal_range_min"].as<double>();
+  }
+  if (nodeLight["pedestal_range_max"]) {
+    cfg.light_pedestal_range_max = nodeLight["pedestal_range_max"].as<double>();
+  }
+
+  if (nodeLight["digitizer_offset_correction"]) {
+    cfg.light_digitizer_offset_correction = nodeLight["digitizer_offset_correction"].as<bool>();
+  }
+  if (nodeLight["digitizer_offset_range_start_index"]) {
+    cfg.light_digitizer_offset_range_start_index =
+        nodeLight["digitizer_offset_range_start_index"].as<int>();
+  }
+  if (nodeLight["digitizer_offset_range_stop_index"]) {
+    cfg.light_digitizer_offset_range_stop_index =
+        nodeLight["digitizer_offset_range_stop_index"].as<int>();
+  }
+
+  if (nodeLight["fft_filter"]) {
+    cfg.light_fft_filter = nodeLight["fft_filter"].as<bool>();
+  }
+  if (nodeLight["fft_low_frequency"]) {
+    cfg.light_fft_low_frequency = nodeLight["fft_low_frequency"].as<double>();
+  }
+  if (nodeLight["fft_high_frequency"]) {
+    cfg.light_fft_high_frequency = nodeLight["fft_high_frequency"].as<double>();
+  }
+
   std::cout << "readLightConfig()" << std::endl;
   std::cout << "light_gamma_thr_mV:  "  << cfg.light_gamma_thr / (unit::volt/1000.0) << std::endl;
   std::cout << "light_cosmic_thr_mV:  " << cfg.light_cosmic_thr / (unit::volt/1000.0) << std::endl;
@@ -228,6 +260,18 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
             << lightEventSelectionModeName(cfg.light_event_selection_mode) << std::endl;
   std::cout << "use_for_event_selection: "
             << cfg.use_light_for_event_selection << std::endl;
+  std::cout << "pedestal_correction: " << cfg.light_pedestal_correction << std::endl;
+  std::cout << "pedestal_range_min: " << cfg.light_pedestal_range_min << std::endl;
+  std::cout << "pedestal_range_max: " << cfg.light_pedestal_range_max << std::endl;
+  std::cout << "digitizer_offset_correction: "
+            << cfg.light_digitizer_offset_correction << std::endl;
+  std::cout << "digitizer_offset_range_start_index: "
+            << cfg.light_digitizer_offset_range_start_index << std::endl;
+  std::cout << "digitizer_offset_range_stop_index: "
+            << cfg.light_digitizer_offset_range_stop_index << std::endl;
+  std::cout << "fft_filter: " << cfg.light_fft_filter << std::endl;
+  std::cout << "fft_low_frequency: " << cfg.light_fft_low_frequency << std::endl;
+  std::cout << "fft_high_frequency: " << cfg.light_fft_high_frequency << std::endl;
   printDPPChannelList("general_analysis_channels",
                       cfg.general_analysis_channels);
   printDPPChannelList("pileup_analysis_channels",

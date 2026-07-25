@@ -605,10 +605,11 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
   const int err = static_cast<int>(tpc_tree_buffer_.error_flags);
   const bool tpc_ok   = isTPCDataUsable(err);
   const bool light_ok = isLightDataUsable(err);
-  LightStatus light_status;
+  currentLightStatus_ = LightStatus();
   if (usesLightAnalysis(cfg_)) {
-    light_status = analyzeLightEvent(cfg_, tpc_tree_buffer_, light_timing_, light_ok);
+    currentLightStatus_ = analyzeLightEvent(cfg_, tpc_tree_buffer_, light_timing_, light_ok);
   }
+  const LightStatus& light_status = currentLightStatus_;
 
   bool light_pileup = false;
   bool light_cosmic = false;
@@ -650,15 +651,13 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
 
 RawHitTreeOutputWriter::RawHitTreeOutputWriter(const std::string& output_file_path)
     : output_path_(prepareOutputPath(output_file_path)),
-      file_(std::make_unique<TFile>(output_path_.string().c_str(), "RECREATE")),
-      rawhit_tree_(std::make_unique<TTree>(kRawHitTreeName, kRawHitTreeName))
+      file_(std::make_unique<TFile>(output_path_.string().c_str(), "RECREATE"))
 {
   if (file_->IsZombie()) {
     throw std::runtime_error("Failed to create output ROOT file: " + output_path_.string());
   }
 
-  // Keep ownership in rawhit_tree_; otherwise ROOT may delete it again with the TFile.
-  rawhit_tree_->SetDirectory(nullptr);
+  rawhit_tree_ = new TTree(kRawHitTreeName, kRawHitTreeName);
   bindBranches();
 }
 

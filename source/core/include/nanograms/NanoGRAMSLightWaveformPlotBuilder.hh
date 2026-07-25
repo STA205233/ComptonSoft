@@ -17,67 +17,52 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
- */
-
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveformPlotBuilder_H
+#define COMPTONSOFT_NanoGRAMSLightWaveformPlotBuilder_H 1
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include "NanoGRAMSEvent.hh"
 
-class TTree;
+class TCanvas;
+class TH1D;
+class TLegend;
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-struct TPCTreeLayout
+struct LightWaveformChannelView
 {
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
+  bool valid = false;
+  const std::vector<double>* values = nullptr;
+  double xlow_us = 0.0;
+  double xhigh_us = 0.0;
 };
 
-class TPCTreeBuffer
+class LightWaveformPlotBuilder
 {
 public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
+  LightWaveformPlotBuilder();
+  ~LightWaveformPlotBuilder();
 
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
+  bool updatePlot(int64_t raw_event_id,
+                  const std::array<LightWaveformChannelView, NUM_CH_DPP_MAX>& channels);
 
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
+  TCanvas* canvas() const { return canvas_.get(); }
 
 private:
-  void bindBranches(TTree* tpc_tree);
-
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  std::shared_ptr<TCanvas> canvas_;
+  std::shared_ptr<TLegend> legend_;
+  std::array<std::shared_ptr<TH1D>, NUM_CH_DPP_MAX> hists_{};
+  std::array<bool, NUM_CH_DPP_MAX> legendRegistered_{};
 };
 
 } /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSLightWaveformPlotBuilder_H */

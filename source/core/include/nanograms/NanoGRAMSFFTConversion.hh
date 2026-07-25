@@ -18,66 +18,54 @@
  *************************************************************************/
 
 /**
- * @file NanoGRAMSTPCTreeIO.hh
- * @brief Lightweight TTree input buffer for NanoGRAMS tpctree files.
+ * @file NanoGRAMSFFTConversion.hh
+ * @brief FFT/inverse-FFT conversion of a waveform histogram, ported from
+ *        nanograms-analysis (light/core/include/FFTConversion.hh).
+ * @author Shota Arai
  */
 
-#ifndef COMPTONSOFT_NanoGRAMSTPCTreeIO_H
-#define COMPTONSOFT_NanoGRAMSTPCTreeIO_H 1
+#ifndef COMPTONSOFT_NanoGRAMSFFTConversion_H
+#define COMPTONSOFT_NanoGRAMSFFTConversion_H 1
 
-#include <array>
-#include <cstdint>
-#include <vector>
+#include <memory>
 
-#include "NanoGRAMSEvent.hh"
-
-class TTree;
+#include "TH1D.h"
+#include "TVirtualFFT.h"
 
 namespace comptonsoft
 {
-namespace grams
-{
+namespace grams {
 
-struct TPCTreeLayout
-{
-  int64_t n_entries             = 0;
-  int num_dpp_registered_slots  = NUM_CH_DPP_MAX;
-  int waveform_num_channels     = 0;
-  int waveform_flattened_length = 0;
-  int waveform_len              = 0;
-};
-
-class TPCTreeBuffer
+class NanoGRAMSFFTConversion
 {
 public:
-  explicit TPCTreeBuffer(TTree* tpc_tree);
+  NanoGRAMSFFTConversion() = default;
+  virtual ~NanoGRAMSFFTConversion();
 
-  const TPCTreeLayout& layout() const { return layout_; }
-  int64_t nEntries() const { return layout_.n_entries; }
-  uint32_t representativeUnixTime() const;
-  void getEntry(int64_t entry);
-  void updateWaveformLayoutFromRegisteredChannels();
-  int waveformSlotForDPPChannel(int dpp_ch) const;
+  TH1D* GetHist() const { return hist_; }
+  std::shared_ptr<TH1D> GetHistFFT() const;
+  std::shared_ptr<TH1D> GetHistBack();
+  std::shared_ptr<TVirtualFFT> GetFFT() { return fft_; }
+  std::shared_ptr<TVirtualFFT> GetFFTInverse() { return fftInverse_; }
 
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress{};
-  std::array<uint16_t, NUM_CH_DPP_MAX> wave_num{};
-  std::array<bool,     NUM_CH_DPP_MAX> registered_channels{};
-  std::vector<uint16_t> adc;
-  std::vector<uint32_t> drift_time;
-  std::vector<uint32_t> ti;
-  std::array<uint32_t, NUM_VATA> unixtime{};
-  std::vector<int16_t> waveform;
-  uint16_t error_flags = 0;
+  void SetHist(TH1D* hist);
+  void ExecFFT();
+  void ExecFFTInverse();
+  double GetFrequency(double xPosition) const;
+  double GetRangeX() const { return rangeX_; }
 
 private:
-  void bindBranches(TTree* tpc_tree);
-
-  TTree* tpc_tree_ = nullptr;
-  TPCTreeLayout layout_;
-  std::array<int, NUM_CH_DPP_MAX> waveform_slot_of_dpp_channel_{};
+  TH1D* hist_ = nullptr;
+  bool calcHistBack_ = false;
+  std::shared_ptr<TH1D> histFFT_ = nullptr;
+  std::shared_ptr<TH1D> histBack_ = nullptr;
+  std::shared_ptr<TVirtualFFT> fft_ = nullptr;
+  std::shared_ptr<TVirtualFFT> fftInverse_ = nullptr;
+  double rangeX_ = 0;
+  bool FFTExecuted_ = false;
 };
 
 } /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSTPCTreeIO_H */
+#endif /* COMPTONSOFT_NanoGRAMSFFTConversion_H */

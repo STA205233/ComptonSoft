@@ -18,6 +18,7 @@
  *************************************************************************/
 
 #include "NanoGRAMSHitExtraction.hh"
+#include "NanoGRAMSTPCDataProcessor.hh"
 
 #include <TFile.h>
 #include <TTree.h>
@@ -27,12 +28,13 @@
 #include <format>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 using namespace anlnext;
 
 namespace comptonsoft
 {
-
+using namespace grams;
 namespace
 {
 
@@ -158,6 +160,8 @@ ANLStatus NanoGRAMSHitExtraction::mod_initialize()
   current_raw_event_id_ = -1;
   current_event_hits_.clear();
 
+  defineEvs();
+
   return AS_OK;
 }
 
@@ -276,6 +280,9 @@ ANLStatus NanoGRAMSHitExtraction::mod_analyze()
   current_event_hits_.clear();
 
   const grams::TPCEventType event_type = tpc_tree_reader_->currentEventType();
+  setEvs(event_type, event_hits.size());
+  
+  
   if (quicklook_tree_writer_ &&
       shouldWriteQuickLook(event_type, event_hits)) {
     quicklook_tree_writer_->fillEvent(raw_event_id,
@@ -315,6 +322,44 @@ ANLStatus NanoGRAMSHitExtraction::mod_end_run()
   input_file_.reset();
   current_event_hits_.clear();
   return AS_OK;
+}
+
+void NanoGRAMSHitExtraction::setEvs(TPCEventType eventType, size_t num_hits)
+{
+  if (eventType == TPCEventType::Error) {
+    set_evs("NanoGRAMSHitExtraction:Error");
+  }
+  else if (eventType == TPCEventType::Other) {
+    set_evs("NanoGRAMSHitExtraction:Other");
+  }
+  else if (eventType == TPCEventType::Gamma) {
+    set_evs("NanoGRAMSHitExtraction:Gamma");
+  }
+  else if (eventType == TPCEventType::Cosmic) {
+    set_evs("NanoGRAMSHitExtraction:Cosmic");
+  }
+  else if (eventType == TPCEventType::PileUp) {
+    set_evs("NanoGRAMSHitExtraction:PileUp");
+  }
+  else if (eventType == TPCEventType::TimeUp) {
+    set_evs("NanoGRAMSHitExtraction:TimeUp");
+  }
+
+  set_evs("NanoGRAMSHitExtraction:" + std::to_string(num_hits) +"hits");
+}
+
+void NanoGRAMSHitExtraction::defineEvs()
+{
+  define_evs("NanoGRAMSHitExtraction:Error");
+  define_evs("NanoGRAMSHitExtraction:Other");
+  define_evs("NanoGRAMSHitExtraction:Gamma");
+  define_evs("NanoGRAMSHitExtraction:Cosmic");
+  define_evs("NanoGRAMSHitExtraction:PileUp");
+  define_evs("NanoGRAMSHitExtraction:TimeUp");
+  
+  for (int i = 0; i < NUM_VATA + 1; ++i) {
+    define_evs("NanoGRAMSHitExtraction:" + std::to_string(i) + "hits");
+  }
 }
 
 } /* namespace comptonsoft */
