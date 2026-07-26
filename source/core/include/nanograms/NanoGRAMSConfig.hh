@@ -63,6 +63,11 @@ struct Config
   std::vector<int> general_analysis_channels = {4, 6, 5, 7};
   std::vector<int> pileup_analysis_channels  = {4};
   std::array<int, NUM_CH_DPP_MAX> light_delay_counts{};
+  std::array<double, NUM_CH_DPP_MAX> light_channel_correction = [] {
+    std::array<double, NUM_CH_DPP_MAX> arr;
+    arr.fill(1.0);
+    return arr;
+  }();
   std::string light_waveform_analysis = "average";
   LightEventSelectionMode light_event_selection_mode = LightEventSelectionMode::GammaRequired;
   bool use_light_for_event_selection = true;

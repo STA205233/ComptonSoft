@@ -43,6 +43,7 @@ public:
   anlnext::ANLStatus mod_define() override;
   anlnext::ANLStatus mod_initialize() override;
   anlnext::ANLStatus mod_analyze() override;
+  anlnext::ANLStatus mod_finalize() override;
 private:
   std::array<TH2D*, NUM_CH_DPP_MAX> hists_;
   double ymin_ = -50.0; // mV

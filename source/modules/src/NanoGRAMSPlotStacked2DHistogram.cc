@@ -75,4 +75,14 @@ ANLStatus NanoGRAMSPlotStacked2DHistogram::mod_analyze()
   }
   return AS_OK;
 }
+
+ANLStatus NanoGRAMSPlotStacked2DHistogram::mod_finalize()
+{
+  for (int i : channels_) {
+    if (!hists_[i]) continue;
+    chdir();
+    hists_[i]->Write();
+  }
+  return AS_OK;
+}
 } /* namespace comptonsoft*/

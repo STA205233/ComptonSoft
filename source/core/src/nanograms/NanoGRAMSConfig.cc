@@ -249,6 +249,17 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
     cfg.light_fft_high_frequency = nodeLight["fft_high_frequency"].as<double>();
   }
 
+  if (nodeLight["channel_correction"]) {
+    for (const auto& item : nodeLight["channel_correction"]) {
+      const int ch = item.first.as<int>();
+      if (ch < 0 || ch >= NUM_CH_DPP_MAX) {
+        throw std::runtime_error(
+            "light.channel_correction contains a DPP channel outside 0-7.");
+      }
+      cfg.light_channel_correction[ch] = item.second.as<double>();
+    }
+  }
+
   std::cout << "readLightConfig()" << std::endl;
   std::cout << "light_gamma_thr_mV:  "  << cfg.light_gamma_thr / (unit::volt/1000.0) << std::endl;
   std::cout << "light_cosmic_thr_mV:  " << cfg.light_cosmic_thr / (unit::volt/1000.0) << std::endl;
@@ -276,6 +287,14 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
                       cfg.general_analysis_channels);
   printDPPChannelList("pileup_analysis_channels",
                       cfg.pileup_analysis_channels);
+  std::cout << "channel_correction: [ ";
+  for (int ch = 0; ch < NUM_CH_DPP_MAX; ++ch) {
+    if (ch != 0) {
+      std::cout << ", ";
+    }
+    std::cout << cfg.light_channel_correction[ch];
+  }
+  std::cout << " ]" << std::endl;
 }
 
 void readChargeConfig(Config& cfg, const YAML::Node& node)

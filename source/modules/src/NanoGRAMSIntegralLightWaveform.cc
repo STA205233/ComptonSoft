@@ -20,9 +20,12 @@
 #include "NanoGRAMSIntegralLightWaveform.hh"
 
 #include "AstroUnits.hh"
+#include "CSHitCollection.hh"
+#include "DetectorHit.hh"
 #include "NanoGRAMSLightWaveformStore.hh"
 
 using namespace anlnext;
+using namespace anlgeant4::unit;
 
 namespace comptonsoft {
 NanoGRAMSIntegralLightWaveform::NanoGRAMSIntegralLightWaveform() = default;
@@ -33,12 +36,39 @@ ANLStatus NanoGRAMSIntegralLightWaveform::mod_define()
   VNanoGRAMSLightWaveformQuery::mod_define();
   define_parameter("x_min", &mod_class::xMin_, CLHEP::us, "us");
   define_parameter("x_max", &mod_class::xMax_, CLHEP::us, "us");
+  define_parameter("set_to_hit", &mod_class::set_to_hit_);
+  return AS_OK;
+}
+
+ANLStatus NanoGRAMSIntegralLightWaveform::mod_initialize()
+{
+  const auto status = VNanoGRAMSLightWaveformQuery::mod_initialize();
+  if (status != AS_OK) {
+    return status;
+  }
+
+  if (channels_.empty()) {
+    std::cerr << module_id() << ": no light analysis channels configured" << std::endl;
+    return AS_QUIT_ALL_ERROR;
+  }
+  setHistValueName("Integral [mV us]");
+
+  if (set_to_hit_) {
+    if (!exist_module("CSHitCollection")) {
+      std::cerr << module_id() << ": set_to_hit requires CSHitCollection "
+                 << "in the same ANL chain." << std::endl;
+      return AS_QUIT_ALL_ERROR;
+    }
+    get_module_NC("CSHitCollection", &hitCollection_);
+  }
+
   return AS_OK;
 }
 
 ANLStatus NanoGRAMSIntegralLightWaveform::mod_analyze()
 {
   const auto status = VNanoGRAMSLightWaveformQuery::mod_analyze();
+  resetHistValue();
   if (status != AS_OK) {
     return status;
   }
@@ -47,7 +77,23 @@ ANLStatus NanoGRAMSIntegralLightWaveform::mod_analyze()
   }
 
   integrate();
+
+  if (set_to_hit_ && Valid()) {
+    applyToHits();
+  }
+
   return AS_OK;
+}
+
+void NanoGRAMSIntegralLightWaveform::applyToHits()
+{
+  const double value = HistValue();
+  const int num_time_groups = hitCollection_->NumberOfTimeGroups();
+  for (int g = 0; g < num_time_groups; ++g) {
+    for (auto& hit : hitCollection_->getHits(g)) {
+      hit->setEPI(value);
+    }
+  }
 }
 
 void NanoGRAMSIntegralLightWaveform::integrate()
@@ -57,13 +103,15 @@ void NanoGRAMSIntegralLightWaveform::integrate()
   const double x_min_us = xMin_ / unit::us;
   const double x_max_us = xMax_ / unit::us;
 
-  double integral = 0.0;
-  for (const int light_ch : channels_) {
-    if (!lightWaveformStore_->isValid(light_ch)) {
+  double total_integral = 0.0;
+  bool has_valid_channel = false;
+
+  for (const int channel : channels_) {
+    if (!lightWaveformStore_->isValid(channel)) {
       continue;
     }
 
-    const grams::LightWaveform& waveform = lightWaveformStore_->waveform(light_ch);
+    const grams::LightWaveform& waveform = lightWaveformStore_->waveform(channel);
     const std::size_t nbins = waveform.values.size();
     if (nbins == 0) {
       continue;
@@ -75,6 +123,7 @@ void NanoGRAMSIntegralLightWaveform::integrate()
       continue;
     }
 
+    double integral = 0.0;
     for (std::size_t i = 0; i < nbins; ++i) {
       const double center_us = waveform.xlow_us + (static_cast<double>(i) + 0.5) * bin_width_us;
       if (center_us < x_min_us || center_us >= x_max_us) {
@@ -83,9 +132,16 @@ void NanoGRAMSIntegralLightWaveform::integrate()
       const double value_mV = waveform.values[i] / millivolt;
       integral += value_mV * bin_width_us;
     }
+
+    total_integral += integral * cfg_.light_channel_correction[channel];
+    has_valid_channel = true;
   }
 
-  setHistValue(integral);
+  if (!has_valid_channel) {
+    return;
+  }
+
+  setHistValue(total_integral);
 }
 
 }

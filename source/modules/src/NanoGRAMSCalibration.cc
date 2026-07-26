@@ -19,22 +19,16 @@
 
 #include "NanoGRAMSCalibration.hh"
 
-#include "NanoGRAMSConstants.hh"
+#include "DetectorHit.hh"
 #include "NanoGRAMSHitCalibrator.hh"
 #include "NanoGRAMSHitExtraction.hh"
-
-#include <TFile.h>
-#include <TTree.h>
 
 #include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <limits>
-#include <memory>
 #include <stdexcept>
 #include <string>
-
-#include "HitTreeIOWithInitialInfo.hh"
 
 using namespace anlnext;
 
@@ -45,28 +39,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-
-std::filesystem::path prepareOutputPath(const std::string& output_file_path)
-{
-  if (output_file_path.empty()) {
-    throw std::runtime_error("Hit tree output file path is empty.");
-  }
-
-  fs::path output_path(output_file_path);
-  if (!output_path.parent_path().empty()) {
-    fs::create_directories(output_path.parent_path());
-  }
-  return output_path;
-}
-
-std::string deriveHitTreeOutputPath(const std::string& explicit_path)
-{
-  if (!explicit_path.empty()) {
-    return explicit_path;
-  }
-
-  return "hittree.root";
-}
 
 int64_t gainTimeBin(double unix_time, double cache_seconds)
 {
@@ -84,7 +56,6 @@ NanoGRAMSCalibration::~NanoGRAMSCalibration() = default;
 
 ANLStatus NanoGRAMSCalibration::mod_define()
 {
-  define_parameter("hittree_file", &mod_class::hittree_file_);
   define_parameter("gain_tp_file", &mod_class::gain_tp_file_);
   define_parameter("gain_tp_hash", &mod_class::gain_tp_dict_);
   define_parameter("gain_cache_seconds", &mod_class::gain_cache_seconds_);
@@ -157,29 +128,12 @@ ANLStatus NanoGRAMSCalibration::mod_initialize()
     std::cout << " ]" << std::endl;
   }
 
-  const fs::path output_path =
-      prepareOutputPath(deriveHitTreeOutputPath(hittree_file_));
-
-  output_file_ = std::make_unique<TFile>(output_path.string().c_str(), "RECREATE");
-  if (!output_file_ || output_file_->IsZombie()) {
-    throw std::runtime_error("Failed to create hit tree ROOT file: " + output_path.string());
+  if (!exist_module("CSHitCollection")) {
+    throw std::runtime_error(
+        "NanoGRAMSCalibration requires CSHitCollection in the same ANL chain.");
   }
+  get_module_NC("CSHitCollection", &hitCollection_);
 
-  hit_tree_ = new TTree(grams::kHitTreeName, grams::kHitTreeName);
-  hit_tree_->SetDirectory(output_file_.get());
-
-  tree_io_ = std::make_unique<HitTreeIOWithInitialInfo>();
-  tree_io_->enableInitialInfoRecord();
-  tree_io_->setTree(hit_tree_);
-  tree_io_->defineBranches();
-  tree_io_->setInitialInfo(0.0,
-                           vector3_t(0.0, 0.0, 0.0),
-                           0.0,
-                           vector3_t(0.0, 0.0, 0.0));
-  tree_io_->setInitialPolarization(0.0, 0.0, 0.0);
-  tree_io_->setWeight(1.0);
-
-  written_events_ = 0;
   define_evs("NanoGRAMSHitTree:Fill");
   return AS_OK;
 }
@@ -230,27 +184,17 @@ ANLStatus NanoGRAMSCalibration::mod_analyze()
 
   const int32_t run_id = data_reduction_->runId();
   const int32_t event_id = static_cast<int32_t>(data_reduction_->currentEventId());
-  tree_io_->fillHits(run_id, event_id, hits);
-  ++written_events_;
+  for (auto& hit : hits) {
+    hit->setRunID(run_id);
+    hit->setEventID(event_id);
+    hitCollection_->insertHit(hit);
+  }
   set_evs("NanoGRAMSHitTree:Fill");
   return AS_OK;
 }
 
 ANLStatus NanoGRAMSCalibration::mod_end_run()
 {
-  if (output_file_ && hit_tree_) {
-    output_file_->cd();
-    hit_tree_->Write();
-    output_file_->Write();
-    std::cout << "[ROOT] Saved hit tree: " << output_file_->GetName()
-              << " (events=" << written_events_
-              << ", entries=" << hit_tree_->GetEntries() << ")\n";
-    output_file_->Close();
-  }
-
-  tree_io_.reset();
-  hit_tree_ = nullptr;
-  output_file_.reset();
   data_reduction_ = nullptr;
   return AS_OK;
 }

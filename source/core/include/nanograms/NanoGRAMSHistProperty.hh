@@ -31,15 +31,27 @@ public:
   virtual ~VNanoGRAMSHistProperty() = default;
   
 protected:
-  void setHistValue(T value) { value_ = value; }
+  void setHistValue(T value)
+  {
+    value_ = value;
+    valid_ = true;
+  }
+  void setHistValueName(const std::string& name) { name_ = name; }
+  void resetHistValue()
+  {
+    value_ = T();
+    valid_ = false;
+  }
 
 public:
   T HistValue() const { return value_; }
   const std::string& ValueName() const { return name_; }
-  const T& HistValueRef() { return value_; }
+  const T& HistValueRef() const { return value_; }
+  bool Valid() const { return valid_; }
 private:
   T value_;
   std::string name_;
+  bool valid_ = true;
 };
 }
 #endif /* COMPTONSOFT_NanoGRAMSHistProperty_hh */

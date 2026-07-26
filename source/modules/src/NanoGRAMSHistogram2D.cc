@@ -76,13 +76,16 @@ ANLStatus NanoGRAMSHistogram2D::mod_initialize()
   hist_ = new TH2D(histName_.c_str(), histTitle_.c_str(),
                    numBinsX_, xMin_, xMax_,
                    numBinsY_, yMin_, yMax_);
-
+  hist_->SetXTitle(xSource_->ValueName().c_str());
+  hist_->SetYTitle(ySource_->ValueName().c_str());
   return AS_OK;
 }
 
 ANLStatus NanoGRAMSHistogram2D::mod_analyze()
 {
-  hist_->Fill(xSource_->HistValue(), ySource_->HistValue());
+  if (xSource_->Valid() && ySource_->Valid()) {
+    hist_->Fill(xSource_->HistValue(), ySource_->HistValue());
+  }
   return AS_OK;
 }
 

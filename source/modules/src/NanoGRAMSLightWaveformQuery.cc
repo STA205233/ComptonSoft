@@ -104,7 +104,7 @@ bool VNanoGRAMSLightWaveformQuery::isSkipLoop() const
       break;
     }
   }
-  if (!has_include) {
+  if (!has_include && !includeEvs_.empty()) {
     return true;
   }
   for (const auto& exclude_evs : excludeEvs_) {

@@ -25,6 +25,9 @@
 class TH1D;
 
 namespace comptonsoft {
+
+class CSHitCollection;
+
 class NanoGRAMSIntegralLightWaveform : public VNanoGRAMSLightWaveformQuery, public VNanoGRAMSHistProperty<double>
 {
   DEFINE_ANL_MODULE(NanoGRAMSIntegralLightWaveform, "1.0")
@@ -35,12 +38,17 @@ public:
 
   anlnext::ANLStatus mod_define() override;
   anlnext::ANLStatus mod_analyze() override;
+  anlnext::ANLStatus mod_initialize() override;
 
 private:
   double xMin_ = 0.0 * CLHEP::us;
   double xMax_ = 5.0 * CLHEP::us;
+  bool set_to_hit_ = false;
+
+  CSHitCollection* hitCollection_ = nullptr;
 
   void integrate();
+  void applyToHits();
 };
 
 }

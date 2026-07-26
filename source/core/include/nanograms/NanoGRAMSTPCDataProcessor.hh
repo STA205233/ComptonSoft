@@ -177,7 +177,7 @@ private:
 
   std::filesystem::path  output_path_;
   std::unique_ptr<TFile> file_;
-  std::unique_ptr<TTree> rawhit_tree_;
+  TTree* rawhit_tree_;
   int64_t eventid_    = 0;
   int64_t raweventid_ = 0;
   int16_t ihit_       = 0;
