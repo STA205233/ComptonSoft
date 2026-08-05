@@ -90,6 +90,13 @@ struct Config
 void readConfig(Config& cfg, const std::string& config_path);
 void readDPPConfig(Config& cfg, const std::string& tpctree_file);
 
+/**
+ * Read the DPP readout configuration (listwave_delay) from the given YAML file.
+ * Use this when the DPP configuration file is not the "config_dpp.yaml" sitting
+ * next to a tpctree file, e.g. for dpplist data.
+ */
+void readDPPConfigFile(Config& cfg, const std::string& dpp_config_path);
+
 } /* namespace grams */
 } /* namespace comptonsoft */
 

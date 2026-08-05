@@ -178,6 +178,7 @@ ANLStatus NanoGRAMSCalibration::mod_analyze()
       buildCalibratedHits(calibration_config_,
                           tpc_property_,
                           data_reduction_->currentEventHits());
+        const bool record_undetected_hit = 
   if (hits.empty()) {
     return AS_OK;
   }

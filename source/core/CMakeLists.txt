@@ -126,8 +126,13 @@ set(CS_CORE_CLASSES
   src/nanograms/NanoGRAMSLightWaveformPlotBuilder.cc
   src/nanograms/NanoGRAMSFFTConversion.cc
   src/nanograms/NanoGRAMSQuickLookTreeIO.cc
+  src/nanograms/NanoGRAMSLightTreeIO.cc
+  src/nanograms/NanoGRAMSDppListDataProcessor.cc
   src/nanograms/NanoGRAMSTPCTreeIO.cc
   src/nanograms/NanoGRAMSTPCDataProcessor.cc
+  src/DppListDataDefinition.cc
+  src/GroupedDppListData.cc
+  src/DppRootIO.cc
   )
 
 if(CS_USE_ORT)

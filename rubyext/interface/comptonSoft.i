@@ -192,17 +192,16 @@
 #endif
 #include "NanoGRAMSCalibration.hh"
 #include "NanoGRAMSHitExtraction.hh"
+#include "NanoGRAMSReadDppList.hh"
+#include "NanoGRAMSGetPeak.hh"
 #include "NanoGRAMSLightWaveformStore.hh"
 #include "NanoGRAMSMakeLightWaveform.hh"
 #include "NanoGRAMSWriteLightWaveform.hh"
-#include "NanoGRAMSCorrectPedestal.hh"
-#include "NanoGRAMSCorrectDigitizerOffset.hh"
-#include "NanoGRAMSApplyLightFFTFilter.hh"
 #include "NanoGRAMSIntegralLightWaveform.hh"
 #include "NanoGRAMSHistogram1D.hh"
 #include "NanoGRAMSHistogram2D.hh"
 #include "NanoGRAMSPlotStacked2DHistogram.hh"
-#include "NanoGRAMSIntegralLightWaveform.hh"
+#include "WriteNanoGRAMSLightTree.hh"
 
 #include "class_list_anlGeant4.hh"
 #include "comptonsoft_basic_classes.hh"
@@ -1348,27 +1347,6 @@ public:
   ~NanoGRAMSWriteLightWaveform() override;
 };
 
-class NanoGRAMSCorrectPedestal : public VCSModule
-{
-public:
-  NanoGRAMSCorrectPedestal();
-  ~NanoGRAMSCorrectPedestal() override;
-};
-
-class NanoGRAMSCorrectDigitizerOffset : public VCSModule
-{
-public:
-  NanoGRAMSCorrectDigitizerOffset();
-  ~NanoGRAMSCorrectDigitizerOffset() override;
-};
-
-class NanoGRAMSApplyLightFFTFilter : public VCSModule
-{
-public:
-  NanoGRAMSApplyLightFFTFilter();
-  ~NanoGRAMSApplyLightFFTFilter() override;
-};
-
 class NanoGRAMSIntegralLightWaveform : public VCSModule
 {
 public:
@@ -1402,6 +1380,27 @@ class NanoGRAMSIntegralLightWaveform : public VCSModule
 public:
   NanoGRAMSIntegralLightWaveform();
   ~NanoGRAMSIntegralLightWaveform();
+};
+
+class NanoGRAMSGetPeak : public VCSModule
+{
+public:
+  NanoGRAMSGetPeak();
+  ~NanoGRAMSGetPeak();
+};
+
+class WriteNanoGRAMSLightTree : public VCSModule
+{
+public:
+  WriteNanoGRAMSLightTree();
+  ~WriteNanoGRAMSLightTree();
+};
+
+class NanoGRAMSReadDppList : public VCSModule
+{
+public:
+  NanoGRAMSReadDppList();
+  ~NanoGRAMSReadDppList();
 };
 
 class NanoGRAMSCalibration : public VCSModule

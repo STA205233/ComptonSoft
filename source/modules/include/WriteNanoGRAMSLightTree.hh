@@ -17,32 +17,49 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_NanoGRAMSApplyLightFFTFilter_hh
-#define COMPTONSOFT_NanoGRAMSApplyLightFFTFilter_hh 1
+#ifndef COMPTONSOFT_WriteNanoGRAMSLightTree_H
+#define COMPTONSOFT_WriteNanoGRAMSLightTree_H 1
 
-#include "NanoGRAMSLightWaveformStage.hh"
+#include "VCSModule.hh"
+#include <memory>
+#include <string>
 
-namespace comptonsoft
+class TTree;
+
+namespace comptonsoft {
+
+class NanoGRAMSIntegralLightWaveform;
+class NanoGRAMSLightTreeIO;
+class NanoGRAMSGetPeak;
+
+/**
+ * Write the light waveform integrals of NanoGRAMSIntegralLightWaveform
+ * into a tree. One event makes one entry so that the tree can be used as
+ * a friend tree of the event tree.
+ *
+ * @author Shota Arai
+ * @date 2026-07-29
+ */
+class WriteNanoGRAMSLightTree : public VCSModule
 {
-
-class NanoGRAMSApplyLightFFTFilter : public VNanoGRAMSLightWaveformStage
-{
-  DEFINE_ANL_MODULE(NanoGRAMSApplyLightFFTFilter, 1.0);
-
+  DEFINE_ANL_MODULE(WriteNanoGRAMSLightTree, 1.0);
 public:
-  NanoGRAMSApplyLightFFTFilter();
-  ~NanoGRAMSApplyLightFFTFilter() override;
+  WriteNanoGRAMSLightTree();
+  ~WriteNanoGRAMSLightTree();
 
   anlnext::ANLStatus mod_define() override;
-
-protected:
-  void applyCorrection(std::vector<double>& waveform, int wave_compress) override;
+  anlnext::ANLStatus mod_initialize() override;
+  anlnext::ANLStatus mod_analyze() override;
 
 private:
-  double lowFrequency_ = 0.0;
-  double highFrequency_ = 0.0;
+  std::string integralModule_;
+  std::string peakModule_;
+  const NanoGRAMSIntegralLightWaveform* integral_ = nullptr;
+  const NanoGRAMSGetPeak* peak_ = nullptr;
+  TTree* tree_ = nullptr;
+  std::unique_ptr<NanoGRAMSLightTreeIO> treeIO_;
 };
 
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSApplyLightFFTFilter_hh */
+#endif /* COMPTONSOFT_WriteNanoGRAMSLightTree_H */

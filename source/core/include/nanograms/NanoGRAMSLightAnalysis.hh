@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "NanoGRAMSConfig.hh"
+#include "NanoGRAMSLightWaveform.hh"
 #include "NanoGRAMSTPCTreeIO.hh"
 
 namespace comptonsoft
@@ -70,6 +71,15 @@ struct LightStatus
 };
 
 std::string normalizeLightWaveformAnalysis(const std::string& mode);
+
+/**
+ * Convert a raw light waveform into a voltage waveform, applying the pedestal
+ * correction, the digitizer offset correction, the FFT filter and the ADC-to-mV
+ * conversion configured in @a cfg.
+ * This is the common conversion shared by the tpctree and the dpplist paths.
+ */
+std::vector<double> lightVoltageWaveformFromView(const Config& cfg,
+                                                 const LightWaveformView& view);
 
 LightStatus analyzeLightEvent(const Config& cfg,
                               const TPCTreeBuffer& tpc_tree_buffer,

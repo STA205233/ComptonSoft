@@ -114,7 +114,7 @@ int DppListDataDefinition::InterpretListWave(const std::deque<char> &data, const
       return 0;
     }
     else if (waveNum_ != wave_num_array[ch_] * 8) { // 8 comes from the configuration.
-      std::cerr << terminal::yellow << "Warning: " << terminal::reset << "Waveform number(" << waveNum_ << ") is not consistent with the configuration(" << wave_num_array[ch_] * 8 << ")" << std::endl;
+      std::cerr << "Warning: " << "Waveform number(" << waveNum_ << ") is not consistent with the configuration(" << wave_num_array[ch_] * 8 << ")" << std::endl;
       waveNum_ = wave_num_array[ch_] * 8;
       hasWarning_ = true;
     }
@@ -132,7 +132,7 @@ int DppListDataDefinition::InterpretListWave(const std::deque<char> &data, const
     if (verbose_ > 3)
       std::cout << "header: " << std::hex << header_ << std::dec << std::endl;
     if (!CheckHeader(ch_, header_)) {
-      std::cerr << terminal::red << "Error: " << terminal::reset << "Header (" << std::hex << header_ << std::dec << ") is wrong" << std::endl;
+      std::cerr << "Error: " << "Header (" << std::hex << header_ << std::dec << ") is wrong" << std::endl;
       isValid_ = false;
       isFatal_ = true;
       return SIZE_LIST_DATA + sizeWaveHeader_ + waveNum_ * 2;
@@ -157,12 +157,12 @@ int DppListDataDefinition::InterpretListWave(const std::deque<char> &data, const
     const int16_t wave_value = static_cast<int>(((static_cast<unsigned int>(data[SIZE_LIST_DATA + sizeWaveHeader_ + 2 * i]) << 8) & 0xFF00) + (static_cast<unsigned int>(data[SIZE_LIST_DATA + sizeWaveHeader_ + 2 * i + 1]) & 0x00FF) - 16384);
     if (wave_value < -8191 || wave_value > 8191) {
       if ((strictFlag_ & 2) == 2) {
-        std::cerr << terminal::red << "Error: " << terminal::reset << "Waveform value(" << wave_value << ") is out of range in index " << i << std::endl;
+        std::cerr << "Error: " << "Waveform value(" << wave_value << ") is out of range in index " << i << std::endl;
         isValid_ = false;
         isFatal_ = true;
       }
       else {
-        std::cerr << terminal::yellow << "Warning: " << terminal::reset << "Waveform value(" << wave_value << ") is out of range." << std::endl;
+        std::cerr << "Warning: " << "Waveform value(" << wave_value << ") is out of range." << std::endl;
         hasWarning_ = true;
       }
     }

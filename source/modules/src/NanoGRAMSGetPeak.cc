@@ -17,7 +17,7 @@
  *                                                                       *
  *************************************************************************/
 
-#include "NanoGRAMSIntegralLightWaveform.hh"
+#include "NanoGRAMSGetPeak.hh"
 
 #include "AstroUnits.hh"
 #include "CSHitCollection.hh"
@@ -32,20 +32,19 @@ using namespace anlnext;
 using namespace anlgeant4::unit;
 
 namespace comptonsoft {
-NanoGRAMSIntegralLightWaveform::NanoGRAMSIntegralLightWaveform() = default;
-NanoGRAMSIntegralLightWaveform::~NanoGRAMSIntegralLightWaveform() = default;
+NanoGRAMSGetPeak::NanoGRAMSGetPeak() = default;
+NanoGRAMSGetPeak::~NanoGRAMSGetPeak() = default;
 
-ANLStatus NanoGRAMSIntegralLightWaveform::mod_define()
+ANLStatus NanoGRAMSGetPeak::mod_define()
 {
   VNanoGRAMSLightWaveformQuery::mod_define();
-  define_parameter("x_min", &mod_class::xMin_, CLHEP::us, "us");
-  define_parameter("x_max", &mod_class::xMax_, CLHEP::us, "us");
-  define_parameter("unit", &mod_class::unit_);
+  define_parameter("x_min", &mod_class::x_min_, CLHEP::us, "us");
+  define_parameter("x_max", &mod_class::x_max_, CLHEP::us, "us");
   define_parameter("set_to_hit", &mod_class::set_to_hit_);
   return AS_OK;
 }
 
-ANLStatus NanoGRAMSIntegralLightWaveform::mod_initialize()
+ANLStatus NanoGRAMSGetPeak::mod_initialize()
 {
   const auto status = VNanoGRAMSLightWaveformQuery::mod_initialize();
   if (status != AS_OK) {
@@ -56,10 +55,11 @@ ANLStatus NanoGRAMSIntegralLightWaveform::mod_initialize()
     std::cerr << module_id() << ": no light analysis channels configured" << std::endl;
     return AS_QUIT_ALL_ERROR;
   }
-  setHistValueName("Integral [" + unit_ + "]");
+  setHistValueName("Peak Value [mV]");
 
   channel_list_ = channels_;
-  integrals_.assign(channel_list_.size(), std::numeric_limits<double>::quiet_NaN());
+  peaks_.assign(channel_list_.size(), std::numeric_limits<double>::quiet_NaN());
+  peak_pos_.assign(channel_list_.size(), std::numeric_limits<double>::quiet_NaN());
 
   general_channel_.assign(channel_list_.size(), false);
   for (std::size_t index = 0; index < channel_list_.size(); index++) {
@@ -79,11 +79,12 @@ ANLStatus NanoGRAMSIntegralLightWaveform::mod_initialize()
   return AS_OK;
 }
 
-ANLStatus NanoGRAMSIntegralLightWaveform::mod_analyze()
+ANLStatus NanoGRAMSGetPeak::mod_analyze()
 {
   const auto status = VNanoGRAMSLightWaveformQuery::mod_analyze();
   resetHistValue();
-  std::fill(integrals_.begin(), integrals_.end(), std::numeric_limits<double>::quiet_NaN());
+  std::fill(peaks_.begin(), peaks_.end(), std::numeric_limits<double>::quiet_NaN());
+  std::fill(peak_pos_.begin(), peak_pos_.end(), std::numeric_limits<double>::quiet_NaN());
   if (status != AS_OK) {
     return status;
   }
@@ -91,16 +92,16 @@ ANLStatus NanoGRAMSIntegralLightWaveform::mod_analyze()
     return AS_OK;
   }
 
-  integrate();
+  find_peak();
 
   if (set_to_hit_ && Valid()) {
-    applyToHits();
+    apply_to_hits();
   }
 
   return AS_OK;
 }
 
-void NanoGRAMSIntegralLightWaveform::applyToHits()
+void NanoGRAMSGetPeak::apply_to_hits()
 {
   const double value = HistValue();
   const int num_time_groups = hit_collection_->NumberOfTimeGroups();
@@ -111,15 +112,14 @@ void NanoGRAMSIntegralLightWaveform::applyToHits()
   }
 }
 
-void NanoGRAMSIntegralLightWaveform::integrate()
+void NanoGRAMSGetPeak::find_peak()
 {
   namespace unit = anlgeant4::unit;
   constexpr double millivolt = unit::volt / 1000.0;
-  const double x_min_us = xMin_ / unit::us;
-  const double x_max_us = xMax_ / unit::us;
-
-  double total_integral = 0.0;
+  const double x_min_us = x_min_ / unit::us;
+  const double x_max_us = x_max_ / unit::us;
   bool has_valid_channel = false;
+  double total_peak = 0;
 
   for (std::size_t index = 0; index < channel_list_.size(); index++) {
     const int channel = channel_list_[index];
@@ -138,7 +138,8 @@ void NanoGRAMSIntegralLightWaveform::integrate()
       continue;
     }
 
-    double integral = 0.0;
+    double peak = std::numeric_limits<double>::min();
+    double peak_pos = 0;
     for (std::size_t i = 0; i < nbins; ++i) {
       const double center_us = waveform.xlow_us + (static_cast<double>(i) + 0.5) * bin_width_us;
       if (center_us < x_min_us) {
@@ -148,14 +149,17 @@ void NanoGRAMSIntegralLightWaveform::integrate()
         break;
       }
       const double value_mV = waveform.values[i] / millivolt;
-      integral += value_mV * bin_width_us;
+      if (peak < value_mV) {
+        peak = value_mV;
+        peak_pos = center_us;
+      }
     }
 
-    const double corrected_integral = integral * cfg_.light_channel_correction[channel];
-    integrals_[index] = corrected_integral;
     if (general_channel_[index]) {
-      total_integral += corrected_integral;
       has_valid_channel = true;
+      total_peak += peak;
+      peaks_[index] = peak;
+      peak_pos_[index] = peak_pos;
     }
   }
 
@@ -163,7 +167,7 @@ void NanoGRAMSIntegralLightWaveform::integrate()
     return;
   }
 
-  setHistValue(total_integral);
+  setHistValue(total_peak);
 }
 
 } // namespace comptonsoft

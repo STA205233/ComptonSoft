@@ -4,6 +4,10 @@
 #include "DppListDataDefinition.hh"
 #include "DppParameters.hh"
 #include <array>
+#include <cstdint>
+#include <vector>
+
+namespace ngUtil {
 
 class GroupedDppListData {
 public:
@@ -32,6 +36,12 @@ private:
   int version_ = 2;
 
 public:
+  /**
+   * Reset the content so that this instance can be reused for the next event.
+   * The capacity of the waveform buffers is kept, so no reallocation happens
+   * after the first event.
+   */
+  void Clear();
   void SetVerbose(int verbose) { verbose_ = verbose; }
   void SetGrouped(bool grouped) { isGrouped_ = grouped; }
   bool AddEvent(const DppListDataDefinition &event);
@@ -68,5 +78,7 @@ public:
   int GetVerbose() const { return verbose_; }
   int GetVersion() const { return version_; }
 };
+
+} // namespace ngUtil
 
 #endif //GroupedDppData_hh

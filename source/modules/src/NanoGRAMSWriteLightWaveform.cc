@@ -27,8 +27,7 @@
 
 using namespace anlnext;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
 NanoGRAMSWriteLightWaveform::NanoGRAMSWriteLightWaveform() = default;
 
@@ -40,7 +39,7 @@ ANLStatus NanoGRAMSWriteLightWaveform::mod_define()
   if (status != AS_OK) {
     return status;
   }
-  define_parameter("period",           &mod_class::period_);
+  define_parameter("period", &mod_class::period_);
   define_parameter("max_saved_events", &mod_class::maxSavedEvents_);
   return AS_OK;
 }
@@ -66,13 +65,15 @@ ANLStatus NanoGRAMSWriteLightWaveform::mod_analyze()
 
   if (reachedSaveLimit()) {
     if (!saveLimitWarned_) {
-      std::cout << "[WARN] NanoGRAMSWriteLightWaveform: reached max_saved_events="
-                << maxSavedEvents_
+      std::cout << "[WARN] NanoGRAMSWriteLightWaveform: reached max_saved_events=" << maxSavedEvents_
                 << "; further events will not be written to avoid an unbounded "
                    "ROOT file key count.\n";
       saveLimitWarned_ = true;
     }
     ++eventCounter_;
+    return AS_OK;
+  }
+  if (isSkipLoop()) {
     return AS_OK;
   }
 
@@ -88,8 +89,7 @@ ANLStatus NanoGRAMSWriteLightWaveform::mod_analyze()
   if (plotBuilder_.updatePlot(lightWaveformStore_->currentRawEventId(), channel_views)) {
     chdir();
     TCanvas* canvas = plotBuilder_.canvas();
-    const std::string canvas_name =
-        "light_waveform_" + std::to_string(lightWaveformStore_->currentRawEventId());
+    const std::string canvas_name = "light_waveform_" + std::to_string(lightWaveformStore_->currentRawEventId());
     canvas->SetName(canvas_name.c_str());
     canvas->Write();
     ++savedEventCount_;

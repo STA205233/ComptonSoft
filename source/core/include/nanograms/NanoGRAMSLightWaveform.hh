@@ -25,10 +25,6 @@
 #include <vector>
 #include <cstdint>
 
-namespace ngutil {
-class DppListDataDefinition;
-}
-
 namespace comptonsoft
 {
 namespace grams

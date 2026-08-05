@@ -32,11 +32,9 @@
 
 using namespace anlnext;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 using namespace grams;
-namespace
-{
+namespace {
 
 int64_t gainTimeBin(double unix_time, double cache_seconds)
 {
@@ -79,16 +77,16 @@ NanoGRAMSHitExtraction::~NanoGRAMSHitExtraction() = default;
 
 ANLStatus NanoGRAMSHitExtraction::mod_define()
 {
-  define_parameter("config_file",         &mod_class::config_file_);
-  define_parameter("tpctree_file",        &mod_class::tpctree_file_);
-  define_parameter("rawhittree_file",     &mod_class::rawhittree_file_);
-  define_parameter("quicklook_file",      &mod_class::quicklook_file_);
-  define_parameter("gain_tp_file",        &mod_class::gain_tp_file_);
-  define_parameter("gain_tp_hash",        &mod_class::gain_tp_dict_);
-  define_parameter("gain_cache_seconds",  &mod_class::gain_cache_seconds_);
-  define_parameter("run_id",              &mod_class::run_id_);
+  define_parameter("config_file", &mod_class::config_file_);
+  define_parameter("tpctree_file", &mod_class::tpctree_file_);
+  define_parameter("rawhittree_file", &mod_class::rawhittree_file_);
+  define_parameter("quicklook_file", &mod_class::quicklook_file_);
+  define_parameter("gain_tp_file", &mod_class::gain_tp_file_);
+  define_parameter("gain_tp_hash", &mod_class::gain_tp_dict_);
+  define_parameter("gain_cache_seconds", &mod_class::gain_cache_seconds_);
+  define_parameter("run_id", &mod_class::run_id_);
   define_parameter("quicklook_event_types", &mod_class::quicklook_event_types_);
-  define_parameter("quicklook_num_hits",    &mod_class::quicklook_num_hits_);
+  define_parameter("quicklook_num_hits", &mod_class::quicklook_num_hits_);
   define_parameter("quicklook_save_waveforms", &mod_class::quicklook_save_waveforms_);
   define_map_key("fec", "0");
   add_value_element("gain", &mod_class::gain_tp_value_);
@@ -146,17 +144,19 @@ ANLStatus NanoGRAMSHitExtraction::mod_initialize()
         tpc_tree_reader_->currentBuffer(),
         tpc_property_,
         quicklook_save_waveforms_);
-  } else {
+  }
+  else {
     std::cout << "[INFO] tpcquicklook output is disabled.\n";
   }
 
   if (!rawhittree_file_.empty()) {
     rawhit_tree_writer_ = std::make_unique<grams::RawHitTreeOutputWriter>(rawhittree_file_);
-  } else {
+  }
+  else {
     std::cout << "[INFO] rawhittree output is disabled.\n";
   }
-  gamma_events_         = 0;
-  processed_entries_    = 0;
+  gamma_events_ = 0;
+  processed_entries_ = 0;
   current_raw_event_id_ = -1;
   current_event_hits_.clear();
 
@@ -176,12 +176,14 @@ void NanoGRAMSHitExtraction::setupTPCPropertyForHitSelection()
     use_event_time_gain_ = true;
     std::cout << "[NanoGRAMSHitExtraction] gain_tp_file for hit selection: "
               << gain_tp_path << std::endl;
-  } else if (!gain_tp_dict_.empty()) {
+  }
+  else if (!gain_tp_dict_.empty()) {
     calibration_config_.energy.tp_adc_values =
         fixedTestPulseGainsFromHash(gain_tp_dict_);
     std::cout << "[NanoGRAMSHitExtraction] gain_tp_hash for hit selection."
               << std::endl;
-  } else {
+  }
+  else {
     std::cout << "[NanoGRAMSHitExtraction] WARNING: no gain_tp_file/hash for "
               << "keV hit selection. Temperature correction factors are 1."
               << std::endl;
@@ -281,8 +283,7 @@ ANLStatus NanoGRAMSHitExtraction::mod_analyze()
 
   const grams::TPCEventType event_type = tpc_tree_reader_->currentEventType();
   setEvs(event_type, event_hits.size());
-  
-  
+
   if (quicklook_tree_writer_ &&
       shouldWriteQuickLook(event_type, event_hits)) {
     quicklook_tree_writer_->fillEvent(raw_event_id,
@@ -297,6 +298,9 @@ ANLStatus NanoGRAMSHitExtraction::mod_analyze()
       rawhit_tree_writer_->fillEvent(gamma_events_, raw_event_id, current_event_hits_);
     }
     ++gamma_events_;
+  }
+  else {
+    return AS_SKIP;
   }
 
   return AS_OK;
@@ -345,7 +349,7 @@ void NanoGRAMSHitExtraction::setEvs(TPCEventType eventType, size_t num_hits)
     set_evs("NanoGRAMSHitExtraction:TimeUp");
   }
 
-  set_evs("NanoGRAMSHitExtraction:" + std::to_string(num_hits) +"hits");
+  set_evs("NanoGRAMSHitExtraction:" + std::to_string(num_hits) + "hits");
 }
 
 void NanoGRAMSHitExtraction::defineEvs()
@@ -356,7 +360,7 @@ void NanoGRAMSHitExtraction::defineEvs()
   define_evs("NanoGRAMSHitExtraction:Cosmic");
   define_evs("NanoGRAMSHitExtraction:PileUp");
   define_evs("NanoGRAMSHitExtraction:TimeUp");
-  
+
   for (int i = 0; i < NUM_VATA + 1; ++i) {
     define_evs("NanoGRAMSHitExtraction:" + std::to_string(i) + "hits");
   }

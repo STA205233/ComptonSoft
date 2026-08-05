@@ -17,32 +17,40 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_NanoGRAMSCorrectDigitizerOffset_hh
-#define COMPTONSOFT_NanoGRAMSCorrectDigitizerOffset_hh 1
+#ifndef COMPTONSOFT_NanoGRAMSGetPeak_hh
+#define COMPTONSOFT_NanoGRAMSGetPeak_hh 1
+#include "CSHitCollection.hh"
+#include "NanoGRAMSHistProperty.hh"
+#include "NanoGRAMSLightWaveformQuery.hh"
+namespace comptonsoft {
 
-#include "NanoGRAMSLightWaveformStage.hh"
-
-namespace comptonsoft
+class NanoGRAMSGetPeak final : public VNanoGRAMSLightWaveformQuery, public VNanoGRAMSHistProperty<double>
 {
-
-class NanoGRAMSCorrectDigitizerOffset : public VNanoGRAMSLightWaveformStage
-{
-  DEFINE_ANL_MODULE(NanoGRAMSCorrectDigitizerOffset, 1.0);
-
+  DEFINE_ANL_MODULE(NanoGRAMSGetPeak, 1.0)
 public:
-  NanoGRAMSCorrectDigitizerOffset();
-  ~NanoGRAMSCorrectDigitizerOffset() override;
+  NanoGRAMSGetPeak();
+  virtual ~NanoGRAMSGetPeak();
 
   anlnext::ANLStatus mod_define() override;
+  anlnext::ANLStatus mod_analyze() override;
+  anlnext::ANLStatus mod_initialize() override;
 
-protected:
-  void applyCorrection(std::vector<double>& waveform, int wave_compress) override;
+  const auto& Peaks() const { return peaks_; }
+  const auto& PeakPos() const { return peak_pos_; }
 
 private:
-  int rangeStartIndex_ = 0;
-  int rangeStopIndex_ = 0;
+  double x_min_ = 0.0 * CLHEP::us;
+  double x_max_ = 5.0 * CLHEP::us;
+  bool set_to_hit_ = false;
+  std::vector<int> channel_list_;
+  std::vector<double> peaks_;
+  std::vector<double> peak_pos_;
+  std::vector<bool> general_channel_;
+  CSHitCollection* hit_collection_ = nullptr;
+
+  void find_peak();
+  void apply_to_hits();
 };
 
-} /* namespace comptonsoft */
-
-#endif /* COMPTONSOFT_NanoGRAMSCorrectDigitizerOffset_hh */
+} // namespace comptonsoft
+#endif // COMPTONSOFT_NanoGRAMSGetPeak_hh

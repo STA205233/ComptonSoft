@@ -20,8 +20,9 @@
 #ifndef COMPTONSOFT_NanoGRAMSIntegralLightWaveform_hh
 #define COMPTONSOFT_NanoGRAMSIntegralLightWaveform_hh 1
 
-#include "NanoGRAMSLightWaveformQuery.hh"
 #include "NanoGRAMSHistProperty.hh"
+#include "NanoGRAMSLightWaveformQuery.hh"
+#include <vector>
 class TH1D;
 
 namespace comptonsoft {
@@ -40,17 +41,33 @@ public:
   anlnext::ANLStatus mod_analyze() override;
   anlnext::ANLStatus mod_initialize() override;
 
+  /**
+   * @return the analysis channels, fixed after mod_initialize().
+   */
+  const std::vector<int>& Channels() const { return channel_list_; }
+
+  /**
+   * @return the integral value of each channel in Channels().
+   * The value is NaN if the waveform of the channel is not available.
+   */
+  const std::vector<double>& Integrals() const { return integrals_; }
+
 private:
   double xMin_ = 0.0 * CLHEP::us;
   double xMax_ = 5.0 * CLHEP::us;
   bool set_to_hit_ = false;
 
-  CSHitCollection* hitCollection_ = nullptr;
+  std::vector<int> channel_list_;
+  std::vector<double> integrals_;
+  std::vector<bool> general_channel_;
+  std::vector<double> coeffs_;
+  std::string unit_ = "mV us";
+  CSHitCollection* hit_collection_ = nullptr;
 
   void integrate();
   void applyToHits();
 };
 
-}
+} // namespace comptonsoft
 
 #endif /* COMPTONSOFT_NanoGRAMSIntegralLightWaveform_hh */

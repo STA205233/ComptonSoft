@@ -137,11 +137,9 @@ void validateAverageAnalysisGroups(const TPCTreeBuffer& tpc_tree_buffer,
   }
 }
 
-std::vector<double> lightVoltageWaveform(const Config& cfg,
-                                         const TPCTreeBuffer& tpc_tree_buffer,
-                                         int light_ch)
+std::vector<double> lightVoltageWaveformFromViewImpl(const Config& cfg,
+                                                    const LightWaveformView& view)
 {
-  const LightWaveformView view = viewFromTPCTree(tpc_tree_buffer, light_ch);
   if (!view.samples || view.length <= 0) {
     return {};
   }
@@ -165,6 +163,14 @@ std::vector<double> lightVoltageWaveform(const Config& cfg,
     sample = sample * cfg.adc2mv * (unit::volt / 1000.0);
   }
   return waveform;
+}
+
+std::vector<double> lightVoltageWaveform(const Config& cfg,
+                                         const TPCTreeBuffer& tpc_tree_buffer,
+                                         int light_ch)
+{
+  return lightVoltageWaveformFromViewImpl(cfg,
+                                          viewFromTPCTree(tpc_tree_buffer, light_ch));
 }
 
 void updateLightPeaksByIndex(LightPeaks& peaks,
@@ -320,6 +326,12 @@ LightPeaks analyzeLightChannelGroup(const Config& cfg,
 }
 
 } // namespace
+
+std::vector<double> lightVoltageWaveformFromView(const Config& cfg,
+                                                 const LightWaveformView& view)
+{
+  return lightVoltageWaveformFromViewImpl(cfg, view);
+}
 
 std::string normalizeLightWaveformAnalysis(const std::string& mode)
 {
