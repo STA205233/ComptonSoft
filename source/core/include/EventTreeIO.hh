@@ -111,6 +111,7 @@ private:
   std::array<float, MaxHits> local_posy_;
   std::array<float, MaxHits> local_posz_;
   std::array<double, MaxHits> time_;
+  std::array<uint32_t, MaxHits> multiplicity_;
   int32_t grade_ = 0;
 };
 

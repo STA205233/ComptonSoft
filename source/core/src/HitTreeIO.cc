@@ -91,6 +91,7 @@ void HitTreeIO::defineBranches()
   hittree_->Branch("local_posz_error", &local_posz_error_, "local_posz_error/F");
   hittree_->Branch("time",             &time_,             "time/D");
   hittree_->Branch("time_error",       &time_error_,       "time_error/D");
+  hittree_->Branch("multiplicity", &multiplicity_, "multiplicity/s");
   hittree_->Branch("grade",            &grade_,            "grade/I");
 }
 
@@ -148,7 +149,8 @@ void HitTreeIO::setBranchAddresses()
   hittree_->SetBranchAddress("local_posy_error", &local_posy_error_);
   hittree_->SetBranchAddress("local_posz_error", &local_posz_error_);
   hittree_->SetBranchAddress("time",             &time_);
-  hittree_->SetBranchAddress("time_error",       &time_error_);
+  hittree_->SetBranchAddress("time_error", &time_error_);
+  hittree_->SetBranchAddress("multiplicity", &multiplicity_);
   hittree_->SetBranchAddress("grade",            &grade_);
 }
 

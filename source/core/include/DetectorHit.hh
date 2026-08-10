@@ -342,6 +342,7 @@ private:
   double time_ = 0.0;
   double time_error_ = 0.0;
   int grade_ = 0;
+  unsigned int multiplicity_ = 0;
   int depthSensingMode_ = 0;
 };
 
