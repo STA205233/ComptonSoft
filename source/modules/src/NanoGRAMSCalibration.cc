@@ -32,13 +32,11 @@
 
 using namespace anlnext;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
 namespace fs = std::filesystem;
 
-namespace
-{
+namespace {
 
 int64_t gainTimeBin(double unix_time, double cache_seconds)
 {
@@ -89,7 +87,8 @@ ANLStatus NanoGRAMSCalibration::mod_initialize()
               << std::endl;
     std::cout << "gain_cache_seconds: "
               << gain_cache_seconds_ << std::endl;
-  } else {
+  }
+  else {
     if (gain_tp_dict_.empty()) {
       throw std::runtime_error(
           "NanoGRAMSCalibration needs either gain_tp_file or gain_tp_hash.");
@@ -178,7 +177,6 @@ ANLStatus NanoGRAMSCalibration::mod_analyze()
       buildCalibratedHits(calibration_config_,
                           tpc_property_,
                           data_reduction_->currentEventHits());
-        const bool record_undetected_hit = 
   if (hits.empty()) {
     return AS_OK;
   }
