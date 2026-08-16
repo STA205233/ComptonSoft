@@ -105,7 +105,6 @@ private:
   int64_t cached_gain_time_bin_ = std::numeric_limits<int64_t>::min();
   uint32_t current_unix_time_ = 0;
   bool use_event_time_gain_ = false;
-  bool record_undetected_hit_ = false;
   std::vector<grams::RawFECHit> current_event_hits_;
 
   void setEvs(grams::TPCEventType eventType, size_t num_hits);

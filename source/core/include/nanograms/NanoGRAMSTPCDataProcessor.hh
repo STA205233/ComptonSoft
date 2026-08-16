@@ -44,23 +44,22 @@
 class TFile;
 class TTree;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 namespace unit = anlgeant4::unit;
 
 class TPCProperty;
 
-namespace grams
-{
+namespace grams {
 
 struct RawFECHit
 {
-  int fec           = 0;
-  uint64_t ti       = 0;
+  int fec = 0;
+  uint64_t ti = 0;
+  double time = 0;
   double drift_time = 0.0 * unit::us;
   std::vector<int16_t> channel_fecs;
   std::vector<int16_t> channels;
-  std::vector<float>   adus;
+  std::vector<float> adus;
 };
 
 struct FECSelectionInput
@@ -69,7 +68,7 @@ struct FECSelectionInput
   const std::array<PixelADU, NUM_VATA>& hit_selection_energy_values;
   const std::array<double, NUM_VATA>& drift_times;
   std::array<PixelMask, NUM_VATA>& claimed_pixels;
-  int fec           = 0;
+  int fec = 0;
   bool charge_selection_enabled = false;
   bool light_cosmic = false;
   bool light_pileup = false;
@@ -77,9 +76,9 @@ struct FECSelectionInput
 
 enum class TPCEventType : int16_t
 {
-  Error  = -1,
-  Other  = 0,
-  Gamma  = 1,
+  Error = -1,
+  Other = 0,
+  Gamma = 1,
   Cosmic = 2,
   PileUp = 3,
   TimeUp = 4,
@@ -89,12 +88,14 @@ class FECTITracker
 {
 public:
   FECTITracker();
-  uint64_t absoluteTi(int fec, uint32_t ti_value);
+  std::pair<uint64_t, double> absoluteTime(int fec, uint32_t ti_value, uint32_t unix_time);
 
 private:
   std::vector<uint64_t> overflow_;
   std::vector<uint32_t> prev_ti_;
-  std::vector<uint8_t>  have_prev_ti_;
+  std::vector<uint8_t> have_prev_ti_;
+  std::vector<uint64_t> run_start_ti_;
+  std::vector<double> run_start_unixtime_;
 };
 
 class FECChargeSelector
@@ -150,10 +151,10 @@ public:
 
 private:
   Config cfg_;
-  TPCTreeBuffer       tpc_tree_buffer_;
-  FECChargeSelector   fec_selector_;
-  LightTimingState    light_timing_;
-  FECTITracker        fec_ti_tracker_;
+  TPCTreeBuffer tpc_tree_buffer_;
+  FECChargeSelector fec_selector_;
+  LightTimingState light_timing_;
+  FECTITracker fec_ti_tracker_;
   GainCorrectionUpdater gain_correction_updater_;
   int64_t current_entry_ = 0;
   TPCEventType current_event_type_ = TPCEventType::Error;
@@ -169,24 +170,24 @@ public:
 
   void fillEvent(int64_t event_id,
                  int64_t raw_event_id,
-                 const   std::vector<RawFECHit>& hits);
+                 const std::vector<RawFECHit>& hits);
   std::string close();
 
 private:
   void bindBranches();
 
-  std::filesystem::path  output_path_;
+  std::filesystem::path output_path_;
   std::unique_ptr<TFile> file_;
   TTree* rawhit_tree_;
-  int64_t eventid_    = 0;
+  int64_t eventid_ = 0;
   int64_t raweventid_ = 0;
-  int16_t ihit_       = 0;
-  int64_t ti_         = 0;
-  int32_t num_hits_   = 0;
-  float adu_          = 0.0;
-  int16_t fecid_      = 0;
-  int16_t ch_         = 0;
-  float drifttime_    = 0.0 * unit::us;
+  int16_t ihit_ = 0;
+  int64_t ti_ = 0;
+  int32_t num_hits_ = 0;
+  float adu_ = 0.0;
+  int16_t fecid_ = 0;
+  int16_t ch_ = 0;
+  float drifttime_ = 0.0 * unit::us;
 };
 
 } /* namespace grams */

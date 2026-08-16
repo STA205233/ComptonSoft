@@ -18,6 +18,7 @@
  *************************************************************************/
 
 #include "NanoGRAMSTPCDataProcessor.hh"
+#include "NanoGRAMSConstants.hh"
 #include "NanoGRAMSLightAnalysis.hh"
 #include "NanoGRAMSTPCProperty.hh"
 
@@ -37,13 +38,10 @@
 #include <string>
 #include <utility>
 
-namespace comptonsoft
-{
-namespace grams
-{
+namespace comptonsoft {
+namespace grams {
 
-namespace
-{
+namespace {
 
 int lowerBoundTimeIndex(double time_window,
                         double trigger_delay,
@@ -66,18 +64,20 @@ bool usesLightAnalysis(const Config& cfg)
 
 bool isTPCDataUsable(int error_flags)
 {
-  if ((error_flags==0)||(error_flags==4)) {
+  if ((error_flags == 0) || (error_flags == 4)) {
     return true;
-  } else {
+  }
+  else {
     return false;
   }
 }
 
 bool isLightDataUsable(int error_flags)
 {
-  if ((error_flags==0)||(error_flags==4)) {
+  if ((error_flags == 0) || (error_flags == 4)) {
     return true;
-  } else {
+  }
+  else {
     return false;
   }
 }
@@ -240,9 +240,9 @@ void recordLightTimingFromCurrentEntry(LightTimingState& light_timing,
                             tpc_tree_layout.waveform_len);
 
     std::cout << "[INFO] light_ch=" << light_ch << "\n";
-    std::cout << " delay_counts="  << delay_counts << "\n";
-    std::cout << " wave_compress="  << static_cast<int>(light_timing.wave_compress[light_ch]) << "\n";
-    std::cout << " timebin_ns="     << light_timing.timebin[light_ch] / unit::ns << "\n";
+    std::cout << " delay_counts=" << delay_counts << "\n";
+    std::cout << " wave_compress=" << static_cast<int>(light_timing.wave_compress[light_ch]) << "\n";
+    std::cout << " timebin_ns=" << light_timing.timebin[light_ch] / unit::ns << "\n";
     std::cout << " pre_pileup_start_index="
               << light_timing.pre_pileup_start_index[light_ch] << "\n";
     std::cout << " pre_pileup_stop_index="
@@ -259,28 +259,36 @@ void recordLightTimingFromCurrentEntry(LightTimingState& light_timing,
 } // namespace
 
 FECTITracker::FECTITracker()
-    : overflow_(NUM_VATA, 0),
-      prev_ti_(NUM_VATA, 0),
-      have_prev_ti_(NUM_VATA, 0)
-{}
+  : overflow_(NUM_VATA, 0),
+    prev_ti_(NUM_VATA, 0),
+    have_prev_ti_(NUM_VATA, 0),
+    run_start_ti_(NUM_VATA, 0),
+    run_start_unixtime_(NUM_VATA, 0)
+{
+}
 
-uint64_t FECTITracker::absoluteTi(int fec, uint32_t ti_value)
+std::pair<uint64_t, double> FECTITracker::absoluteTime(int fec, uint32_t ti_value, uint32_t unixtime)
 {
   if (have_prev_ti_[fec] && ti_value < prev_ti_[fec]) {
     overflow_[fec] += (uint64_t{1} << 32);
   }
   const uint64_t ti_abs = static_cast<uint64_t>(ti_value) + overflow_[fec];
-  prev_ti_[fec]         = ti_value;
-  have_prev_ti_[fec]    = 1;
-  return ti_abs;
+  prev_ti_[fec] = ti_value;
+  if (!have_prev_ti_[fec]) {
+    run_start_ti_[fec] = ti_abs;
+    run_start_unixtime_[fec] = unixtime;
+  }
+  have_prev_ti_[fec] = 1;
+  const double time = run_start_unixtime_[fec] * unit::second + static_cast<double>(ti_abs - run_start_ti_[fec]) * ktiClockPeriod; // note this is not not correct strictly thinking.
+  return std::make_pair(ti_abs, time);
 }
 
 FECChargeSelector::FECChargeSelector(const Config& cfg,
                                      const TPCProperty& tpc_property)
-    : cfg_(cfg),
-      tpc_property_(tpc_property),
-      anode_topology_(buildAnodeChannelTopology()),
-      include_diag_(cfg_.pix_max >= 3) //discussion needed
+  : cfg_(cfg),
+    tpc_property_(tpc_property),
+    anode_topology_(buildAnodeChannelTopology()),
+    include_diag_(cfg_.pix_max >= 3) // discussion needed
 {
   for (int fec = 0; fec < NUM_VATA; ++fec) {
     masks_[fec] = buildFECMask(cfg_, fec);
@@ -303,6 +311,7 @@ FECChargeSelector::selectHits(const TPCTreeBuffer& tpc_tree_buffer,
   std::array<PixelADU, NUM_VATA> hit_selection_energy_values{};
   std::array<double, NUM_VATA> drift_times{};
   std::array<uint64_t, NUM_VATA> ti_values{};
+  std::array<double, NUM_VATA> times_{};
   std::array<double, NUM_VATA> core_values{};
   std::array<int, NUM_VATA> fec_order{};
 
@@ -323,10 +332,10 @@ FECChargeSelector::selectHits(const TPCTreeBuffer& tpc_tree_buffer,
     }
 
     drift_times[fec] = driftTimeFromClock(tpc_tree_buffer.drift_time[fec]);
-    ti_values[fec]   = fec_ti_tracker.absoluteTi(fec, tpc_tree_buffer.ti[fec]);
+    std::tie(ti_values[fec], times_[fec]) = fec_ti_tracker.absoluteTime(fec, tpc_tree_buffer.ti[fec], tpc_tree_buffer.unixtime[fec]);
     core_values[fec] =
         findCoreSignalChannel(hit_selection_energy_values[fec], masks_[fec]).second;
-    fec_order[fec]   = fec;
+    fec_order[fec] = fec;
   }
 
   for (int fec = 0; fec < NUM_VATA; ++fec) {
@@ -347,9 +356,10 @@ FECChargeSelector::selectHits(const TPCTreeBuffer& tpc_tree_buffer,
 
   for (int fec : fec_order) {
     RawFECHit hit;
-    hit.fec        = fec;
-    hit.ti         = ti_values[fec];
+    hit.fec = fec;
+    hit.ti = ti_values[fec];
     hit.drift_time = drift_times[fec];
+    hit.time = times_[fec];
 
     FECSelectionInput selection_input{adu_cmn_sub_values,
                                       hit_selection_energy_values,
@@ -472,7 +482,7 @@ FECChargeSelector::collectClusterPixels(const FECSelectionInput& input,
     }
 
     const int neighbor_fec = pixel.first;
-    const int neighbor_ch  = pixel.second;
+    const int neighbor_ch = pixel.second;
     const double drift_delta = std::abs(input.drift_times[neighbor_fec] -
                                         input.drift_times[fec]);
     if (std::isfinite(drift_delta) &&
@@ -572,11 +582,11 @@ TPCTreeReader::TPCTreeReader(TTree* tpc_tree,
                              const Config& cfg,
                              const TPCProperty& tpc_property,
                              GainCorrectionUpdater gain_correction_updater)
-    : cfg_(cfg),
-      tpc_tree_buffer_(tpc_tree),
-      fec_selector_(cfg_, tpc_property),
-      fec_ti_tracker_(),
-      gain_correction_updater_(std::move(gain_correction_updater))
+  : cfg_(cfg),
+    tpc_tree_buffer_(tpc_tree),
+    fec_selector_(cfg_, tpc_property),
+    fec_ti_tracker_(),
+    gain_correction_updater_(std::move(gain_correction_updater))
 {
   if (tpc_tree_buffer_.nEntries() > 0) {
     tpc_tree_buffer_.getEntry(0);
@@ -603,7 +613,7 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
   }
 
   const int err = static_cast<int>(tpc_tree_buffer_.error_flags);
-  const bool tpc_ok   = isTPCDataUsable(err);
+  const bool tpc_ok = isTPCDataUsable(err);
   const bool light_ok = isLightDataUsable(err);
   currentLightStatus_ = LightStatus();
   if (usesLightAnalysis(cfg_)) {
@@ -621,7 +631,7 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
       charge_selection_enabled = tpc_ok && light_status.gamma;
     }
   }
-  const bool time_up      = hasTimeUp(cfg_, tpc_tree_buffer_);
+  const bool time_up = hasTimeUp(cfg_, tpc_tree_buffer_);
 
   bool rejected_by_excluded_core = false;
   event_hits = fec_selector_.selectHits(tpc_tree_buffer_,
@@ -632,17 +642,23 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
                                         rejected_by_excluded_core);
   if (!tpc_ok) {
     current_event_type_ = TPCEventType::Error;
-  } else if (rejected_by_excluded_core) {
+  }
+  else if (rejected_by_excluded_core) {
     current_event_type_ = TPCEventType::Other;
-  } else if (!event_hits.empty()) {
+  }
+  else if (!event_hits.empty()) {
     current_event_type_ = TPCEventType::Gamma;
-  } else if (light_cosmic) {
+  }
+  else if (light_cosmic) {
     current_event_type_ = TPCEventType::Cosmic;
-  } else if (light_pileup) {
+  }
+  else if (light_pileup) {
     current_event_type_ = TPCEventType::PileUp;
-  } else if (time_up) {
+  }
+  else if (time_up) {
     current_event_type_ = TPCEventType::TimeUp;
-  } else {
+  }
+  else {
     current_event_type_ = TPCEventType::Other;
   }
   ++current_entry_;
@@ -650,8 +666,8 @@ bool TPCTreeReader::processNext(int64_t& raw_event_id,
 }
 
 RawHitTreeOutputWriter::RawHitTreeOutputWriter(const std::string& output_file_path)
-    : output_path_(prepareOutputPath(output_file_path)),
-      file_(std::make_unique<TFile>(output_path_.string().c_str(), "RECREATE"))
+  : output_path_(prepareOutputPath(output_file_path)),
+    file_(std::make_unique<TFile>(output_path_.string().c_str(), "RECREATE"))
 {
   if (file_->IsZombie()) {
     throw std::runtime_error("Failed to create output ROOT file: " + output_path_.string());
@@ -667,26 +683,28 @@ void RawHitTreeOutputWriter::fillEvent(int64_t event_id,
                                        int64_t raw_event_id,
                                        const std::vector<RawFECHit>& hits)
 {
-  eventid_    = event_id;
+  eventid_ = event_id;
   raweventid_ = raw_event_id;
-  num_hits_   = static_cast<int32_t>(hits.size());
+  num_hits_ = static_cast<int32_t>(hits.size());
 
-  for (std::size_t ih=0;ih<hits.size();++ih) {
+  for (std::size_t ih = 0; ih < hits.size(); ++ih) {
     const auto& hit = hits[ih];
-    ihit_      = static_cast<int16_t>(ih);
-    ti_        = static_cast<int64_t>(hit.ti);
+    ihit_ = static_cast<int16_t>(ih);
+    ti_ = static_cast<int64_t>(hit.ti);
     drifttime_ = static_cast<float>(hit.drift_time);
 
     for (std::size_t j = 0; j < hit.channels.size(); ++j) {
       if (j < hit.channel_fecs.size()) {
         fecid_ = hit.channel_fecs[j];
-      } else {
+      }
+      else {
         fecid_ = static_cast<int16_t>(hit.fec);
       }
-      ch_  = hit.channels[j];
+      ch_ = hit.channels[j];
       if (j < hit.adus.size()) {
         adu_ = hit.adus[j];
-      } else {
+      }
+      else {
         adu_ = std::numeric_limits<float>::quiet_NaN();
       }
       rawhit_tree_->Fill();
@@ -709,15 +727,15 @@ std::string RawHitTreeOutputWriter::close()
 
 void RawHitTreeOutputWriter::bindBranches()
 {
-  rawhit_tree_->Branch("eventid",     &eventid_,    "eventid/L");
-  rawhit_tree_->Branch("raweventid",  &raweventid_, "raweventid/L");
-  rawhit_tree_->Branch("ihit",        &ihit_,       "ihit/S");
-  rawhit_tree_->Branch("ti",          &ti_,         "ti/L");
-  rawhit_tree_->Branch("num_hits",    &num_hits_,   "num_hits/I");
-  rawhit_tree_->Branch("adu",         &adu_,        "adu/F");
-  rawhit_tree_->Branch("fecid",       &fecid_,      "fecid/S");
-  rawhit_tree_->Branch("ch",          &ch_,         "ch/S");
-  rawhit_tree_->Branch("drifttime",   &drifttime_,  "drifttime/F");
+  rawhit_tree_->Branch("eventid", &eventid_, "eventid/L");
+  rawhit_tree_->Branch("raweventid", &raweventid_, "raweventid/L");
+  rawhit_tree_->Branch("ihit", &ihit_, "ihit/S");
+  rawhit_tree_->Branch("ti", &ti_, "ti/L");
+  rawhit_tree_->Branch("num_hits", &num_hits_, "num_hits/I");
+  rawhit_tree_->Branch("adu", &adu_, "adu/F");
+  rawhit_tree_->Branch("fecid", &fecid_, "fecid/S");
+  rawhit_tree_->Branch("ch", &ch_, "ch/S");
+  rawhit_tree_->Branch("drifttime", &drifttime_, "drifttime/F");
 }
 
 } /* namespace grams */

@@ -159,6 +159,7 @@ std::vector<DetectorHit_sptr> buildCalibratedHits(
     double posx           = 0.0 * unit::cm;
     double posy           = 0.0 * unit::cm;
     double posz           = 0.0 * unit::cm;
+    const uint16_t multiplicity = static_cast<uint16_t>(raw_hit.channels.size());
     std::size_t max_index = 0;
     double max_energy     = -std::numeric_limits<double>::infinity() * unit::keV;
     bool skip_hit         = false;
@@ -221,7 +222,9 @@ std::vector<DetectorHit_sptr> buildCalibratedHits(
     const int channel_fec = channel_fecs[max_index];
     auto hit = std::make_shared<DetectorHit>();
     hit->setTI(static_cast<int64_t>(raw_hit.ti));
+    hit->setTime(raw_hit.time);
     hit->setDetectorChannelID(ChannelID::Undefined, channel_fec, channel);
+    hit->setMultiplicity(multiplicity);
 
     if ((-2.56 * unit::cm < posx) && (posx < 2.56 * unit::cm) &&
         (-2.56 * unit::cm < posy) && (posy < 2.56 * unit::cm)) {

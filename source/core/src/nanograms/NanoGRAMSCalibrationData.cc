@@ -179,7 +179,7 @@ TestPulseGainTable readTestPulseGainTable(const fs::path& csv_path)
       continue;
     }
     const std::vector<std::string> columns = splitCsvLine(line);
-    if (columns.empty()) {
+    if (columns.empty() || columns[0].empty()) {
       continue;
     }
 

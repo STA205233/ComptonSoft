@@ -210,6 +210,7 @@ void HitTreeIO::fillHits(const int32_t runID,
     local_posz_error_ = hit->LocalPositionErrorZ() / unit::cm;
     time_ = hit->Time() / unit::second;
     time_error_ = hit->TimeError() / unit::second;
+    multiplicity_ = hit->Multiplicity();
     grade_ = hit->Grade();
 
     hittree_->Fill();
@@ -249,6 +250,7 @@ DetectorHit_sptr HitTreeIO::retrieveHit() const
   hit->setLocalPositionError(local_posx_error_ * unit::cm, local_posy_error_ * unit::cm, local_posz_error_ * unit::cm);
   hit->setTime(time_ * unit::second);
   hit->setTimeError(time_error_ * unit::second);
+  hit->setMultiplicity(multiplicity_);
   hit->setGrade(grade_);
 
   return hit;

@@ -78,7 +78,8 @@ void EventTreeIO::defineBranches()
   tree_->Branch("local_posx",     local_posx_.data(),     "local_posx[num_hits]/F");
   tree_->Branch("local_posy",     local_posy_.data(),     "local_posy[num_hits]/F");
   tree_->Branch("local_posz",     local_posz_.data(),     "local_posz[num_hits]/F");
-  tree_->Branch("time",           time_.data(),           "time[num_hits]/D");
+  tree_->Branch("time", time_.data(), "time[num_hits]/D");
+  tree_->Branch("multiplicity", multiplicity_.data(), "multiplicity[num_hits]/s");
   tree_->Branch("grade",          &grade_,                "grade/I");
 }
 
@@ -126,7 +127,8 @@ void EventTreeIO::setBranchAddresses()
   tree_->SetBranchAddress("local_posx",     local_posx_.data());
   tree_->SetBranchAddress("local_posy",     local_posy_.data());
   tree_->SetBranchAddress("local_posz",     local_posz_.data());
-  tree_->SetBranchAddress("time",           time_.data());
+  tree_->SetBranchAddress("time", time_.data());
+  tree_->SetBranchAddress("multiplicity", multiplicity_.data());
   tree_->SetBranchAddress("grade",          &grade_);
 }
 
@@ -180,6 +182,7 @@ void EventTreeIO::fillHits(const int32_t runID,
     local_posy_[i] = hit->LocalPositionY() / unit::cm;
     local_posz_[i] = hit->LocalPositionZ() / unit::cm;
     time_[i] = hit->Time() / unit::second;
+    multiplicity_[i] = hit->Multiplicity();
   }
 
   tree_->Fill();
@@ -227,6 +230,7 @@ DetectorHit_sptr EventTreeIO::retrieveHit(std::size_t i) const
   hit->setPosition(posx_[i] * unit::cm, posy_[i] * unit::cm, posz_[i] * unit::cm);
   hit->setLocalPosition(local_posx_[i] * unit::cm, local_posy_[i] * unit::cm, local_posz_[i] * unit::cm);
   hit->setTime(time_[i] * unit::second);
+  hit->setMultiplicity(multiplicity_[i]);
   hit->setGrade(grade_);
 
   return hit;

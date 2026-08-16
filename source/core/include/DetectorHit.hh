@@ -241,6 +241,9 @@ public:
   void setGrade(int v) { grade_ = v; }
   int Grade() const { return grade_; }
 
+  void setMultiplicity(uint16_t v) { multiplicity_ = v; }
+  uint16_t Multiplicity() const { return multiplicity_; }
+
   void setDepthSensingMode(int v) { depthSensingMode_ = v; }
   int DepthSensingMode() const { return depthSensingMode_; }
 
@@ -342,7 +345,7 @@ private:
   double time_ = 0.0;
   double time_error_ = 0.0;
   int grade_ = 0;
-  unsigned int multiplicity_ = 0;
+  uint16_t multiplicity_ = 0;
   int depthSensingMode_ = 0;
 };
 
