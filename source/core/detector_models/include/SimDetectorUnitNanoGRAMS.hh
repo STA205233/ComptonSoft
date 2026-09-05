@@ -17,30 +17,10 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_SimDetectorUnitFactory_H
-#define COMPTONSOFT_SimDetectorUnitFactory_H 1
-
-#include "VDetectorUnitFactory.hh"
-
+#ifndef COMPTONSOFT_SimDetectorUnitNanoGRAMS_hh
+#define COMPTONSOFT_SimDetectorUnitNanoGRAMS_hh 1
+#include "SimDetectorUnitLArTPCPixel.hh"
 namespace comptonsoft {
-
-/**
- * An abstract factory class for real detector units.
- * @author Hirokazu Odaka
- * @date 2014-11-14
- */
-class SimDetectorUnitFactory : public VDetectorUnitFactory
-{
-public:
-  VRealDetectorUnit* createDetectorUnit2DPixel() override;
-  VRealDetectorUnit* createDetectorUnit2DStrip() override;
-  VRealDetectorUnit* createDetectorUnitScintillator() override;
-  VRealDetectorUnit* createDetectorUnit3DVoxel() override;
-  VRealDetectorUnit* createDetectorUnitLArTPC() override;
-  VRealDetectorUnit* createDetectorUnitLArTPCPixel() override;
-  VRealDetectorUnit* createDetectorUnitNanoGRAMS() override;
-};
-
-} /* namespace comptonsoft */
-
-#endif /* COMPTONSOFT_SimDetectorUnitFactory_H */
+using SimDetectorUnitNanoGRAMS = SimDetectorUnitLArTPCPixel;
+} // namespace comptonsoft
+#endif

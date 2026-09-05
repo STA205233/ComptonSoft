@@ -35,9 +35,6 @@ set(ComptonSoftApplications_ComptonCamera_Classes
   compton_camera/src/ComptonConstraints.cc
   compton_camera/src/HY2017EventReconstructionAlgorithm.cc
   compton_camera/src/HY2020EventReconstructionAlgorithm.cc
-  compton_camera/src/NanoGRAMSEventReconstructionAlgorithm.cc
-  compton_camera/src/NanoGRAMSEnergyComparisonEventReconstructionAlgorithm.cc
-  compton_camera/src/nanograms/NanoGRAMSKNFormulaEventReconstructionAlgorithm.cc
   compton_camera/src/OberlackAlgorithm.cc
   compton_camera/src/TangoAlgorithm.cc
   compton_camera/src/EventReconstructionWithKnownOrder.cc
@@ -241,6 +238,34 @@ if(CS_USE_SIMX)
   )
 endif(CS_USE_SIMX)
 
+set(ComptonSoftApplications_Missions_NanoGRAMS_Classes
+  ### configuration and detector description
+  missions/nanograms/src/NanoGRAMSConfig.cc
+  missions/nanograms/src/NanoGRAMSFECGeometry.cc
+  missions/nanograms/src/NanoGRAMSTPCProperty.cc
+  ### data format
+  missions/nanograms/src/DppListDataDefinition.cc
+  missions/nanograms/src/NanoGRAMSTPCTreeIO.cc
+  missions/nanograms/src/NanoGRAMSQuickLookTreeIO.cc
+  ### calibration
+  missions/nanograms/src/NanoGRAMSCalibrationData.cc
+  missions/nanograms/src/NanoGRAMSChargeToEnergySpline.cc
+  ### data reduction
+  missions/nanograms/src/NanoGRAMSTPCDataProcessor.cc
+  missions/nanograms/src/NanoGRAMSLightAnalysis.cc
+  missions/nanograms/src/NanoGRAMSHitCalibrator.cc
+  ### event reconstruction
+  missions/nanograms/src/NanoGRAMSEventReconstructionAlgorithm.cc
+  missions/nanograms/src/NanoGRAMSEnergyComparisonEventReconstructionAlgorithm.cc
+  missions/nanograms/src/NanoGRAMSKNFormulaEventReconstructionAlgorithm.cc
+)
+
+set(ComptonSoftApplications_Missions_NanoGRAMS_Modules
+  missions/nanograms/src/NanoGRAMSQuickLookWriter.cc
+  missions/nanograms/src/NanoGRAMSReadTPCEvents.cc
+  missions/nanograms/src/NanoGRAMSWriteHitTree.cc
+)
+
 target_sources(ComptonSoftApplications
   PRIVATE
   ${ComptonSoftApplications_DataProcess_Classes}
@@ -257,6 +282,8 @@ target_sources(ComptonSoftApplications
   ${ComptonSoftApplications_Radioactivation_Modules}
   ${ComptonSoftApplications_Missions_ASTROH_Classes}
   ${ComptonSoftApplications_Missions_ASTROH_Modules}
+  ${ComptonSoftApplications_Missions_NanoGRAMS_Classes}
+  ${ComptonSoftApplications_Missions_NanoGRAMS_Modules}
 )
 
 target_include_directories(ComptonSoftApplications
@@ -272,6 +299,7 @@ target_include_directories(ComptonSoftApplications
   charge_transport/include
   radioactivation/include
   missions/astroh/include
+  missons/nanograms/include
 )
 
 target_link_libraries(ComptonSoftApplications
@@ -280,6 +308,8 @@ target_link_libraries(ComptonSoftApplications
   ${CFITSIO_LIB}
   ${MONGOCXX_LIB}
   ${HSQUICKLOOK_LIB}
+  ${YAMLCPP_LIB}
+  ${HDF5_LIB}
 )
 
 install(TARGETS ComptonSoftApplications

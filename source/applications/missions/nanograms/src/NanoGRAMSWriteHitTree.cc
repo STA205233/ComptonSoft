@@ -88,8 +88,8 @@ ANLStatus NanoGRAMSWriteHitTree::mod_initialize()
 
   tree_io_ = std::make_unique<HitTreeIOWithInitialInfo>();
   tree_io_->enableInitialInfoRecord();
-  tree_io_->setTree(hit_tree_);
-  tree_io_->defineBranches();
+  tree_io_->set_tree(hit_tree_);
+  tree_io_->define_branches();
   tree_io_->setInitialInfo(0.0,
                            vector3_t(0.0, 0.0, 0.0),
                            0.0,

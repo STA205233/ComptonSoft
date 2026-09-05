@@ -33,25 +33,18 @@
 
 #include <yaml-cpp/yaml.h>
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
 namespace unit = anlgeant4::unit;
 namespace fs = std::filesystem;
 
-namespace
-{
+namespace {
 
 std::string trim(const std::string& text)
 {
-  const auto first = std::find_if_not(text.begin(), text.end(),
-                                      [](unsigned char c) {
-                                        return std::isspace(c);
-                                      });
-  const auto last = std::find_if_not(text.rbegin(), text.rend(),
-                                     [](unsigned char c) {
-                                       return std::isspace(c);
-                                     }).base();
+  const auto first = std::find_if_not(text.begin(), text.end(), [](unsigned char c) { return std::isspace(c); });
+  const auto last =
+      std::find_if_not(text.rbegin(), text.rend(), [](unsigned char c) { return std::isspace(c); }).base();
   if (first >= last) {
     return "";
   }
@@ -74,8 +67,7 @@ bool isTimeIdDate(const std::string& text)
   if (text.size() != 8) {
     return false;
   }
-  return std::all_of(text.begin(), text.end(),
-                     [](unsigned char c) { return std::isdigit(c); });
+  return std::all_of(text.begin(), text.end(), [](unsigned char c) { return std::isdigit(c); });
 }
 
 bool isTimeIdClock(const std::string& text)
@@ -119,11 +111,11 @@ double parseTimestamp(const std::string& time_id)
 
   std::tm tm{};
   tm.tm_year = std::stoi(normalized.substr(0, 4)) - 1900;
-  tm.tm_mon  = std::stoi(normalized.substr(4, 2)) - 1;
+  tm.tm_mon = std::stoi(normalized.substr(4, 2)) - 1;
   tm.tm_mday = std::stoi(normalized.substr(6, 2));
   tm.tm_hour = std::stoi(normalized.substr(9, 2));
-  tm.tm_min  = std::stoi(normalized.substr(11, 2));
-  tm.tm_sec  = std::stoi(normalized.substr(14, 2));
+  tm.tm_min = std::stoi(normalized.substr(11, 2));
+  tm.tm_sec = std::stoi(normalized.substr(14, 2));
   tm.tm_isdst = -1;
 
   const std::time_t t = std::mktime(&tm);
@@ -168,8 +160,7 @@ TestPulseGainTable readTestPulseGainTable(const fs::path& csv_path)
   }
   for (int fec = 0; fec < NUM_VATA; ++fec) {
     if (fec_columns[fec] < 0) {
-      throw std::runtime_error(
-          std::format("Missing FEC{} column in test-pulse gain CSV.", fec));
+      throw std::runtime_error(std::format("Missing FEC{} column in test-pulse gain CSV.", fec));
     }
   }
 
@@ -197,25 +188,21 @@ TestPulseGainTable readTestPulseGainTable(const fs::path& csv_path)
   }
 
   std::sort(rows.begin(), rows.end(),
-            [](const TestPulseGainRow& lhs, const TestPulseGainRow& rhs) {
-              return lhs.time < rhs.time;
-            });
+            [](const TestPulseGainRow& lhs, const TestPulseGainRow& rhs) { return lhs.time < rhs.time; });
   if (rows.empty()) {
     throw std::runtime_error("No rows in test-pulse gain CSV: " + csv_path.string());
   }
   return rows;
 }
 
-std::array<double, NUM_VATA> interpolatedTestPulseGains(
-    const TestPulseGainTable& rows,
-    double target_time)
+std::array<double, NUM_VATA> interpolatedTestPulseGains(const TestPulseGainTable& rows, double target_time)
 {
   std::array<double, NUM_VATA> gains{};
   gains.fill(std::numeric_limits<double>::quiet_NaN());
 
   for (int fec = 0; fec < NUM_VATA; ++fec) {
     const TestPulseGainRow* before = nullptr;
-    const TestPulseGainRow* after  = nullptr;
+    const TestPulseGainRow* after = nullptr;
     for (const auto& row : rows) {
       if (!std::isfinite(row.fec_gain[fec])) {
         continue;
@@ -232,17 +219,15 @@ std::array<double, NUM_VATA> interpolatedTestPulseGains(
     if (before && after) {
       if (before == after || after->time == before->time) {
         gains[fec] = before->fec_gain[fec];
-      } else {
-        const double weight_after =
-            (target_time - before->time) / (after->time - before->time);
-        gains[fec] = (1.0 - weight_after) * before->fec_gain[fec] +
-                     weight_after * after->fec_gain[fec];
+      }
+      else {
+        const double weight_after = (target_time - before->time) / (after->time - before->time);
+        gains[fec] = (1.0 - weight_after) * before->fec_gain[fec] + weight_after * after->fec_gain[fec];
       }
     }
 
     if (std::isfinite(gains[fec]) && gains[fec] <= 0.0) {
-      throw std::runtime_error(
-          std::format("Test-pulse gain must be positive for FEC{}.", fec));
+      throw std::runtime_error(std::format("Test-pulse gain must be positive for FEC{}.", fec));
     }
   }
 
@@ -257,28 +242,25 @@ CalibrationConfig readCalibrationConfig(const std::string& config_file)
   CalibrationConfig cfg;
   cfg.config_dir = fs::absolute(fs::path(config_file)).parent_path();
 
-  const auto node_energy   = node_calibration["energy"];
+  const auto node_energy = node_calibration["energy"];
   const auto node_position = node_calibration["position"];
 
-  cfg.energy.gain_info_file       = node_energy["gain_info_file"].as<std::string>();
-  cfg.energy.max_time             = config_node["general"]["drift_time_max_us"].as<double>() * unit::us;
-  cfg.energy.tp_channel           = node_energy["tp_channel"].as<int>();
-  cfg.energy.ccal                 = node_energy["ccal"].as<int>();
+  cfg.energy.gain_info_file = node_energy["gain_info_file"].as<std::string>();
+  cfg.energy.max_time = config_node["general"]["drift_time_max_us"].as<double>() * unit::us;
+  cfg.energy.tp_channel = node_energy["tp_channel"].as<int>();
+  cfg.energy.ccal = node_energy["ccal"].as<int>();
 
-  cfg.general.efield = config_node["general"]["efield_v_cm"].as<int>() *
-                       unit::volt / unit::cm;
-  cfg.general.temperature  = config_node["general"]["temperature_k"].as<double>() *
-                             unit::kelvin;
+  cfg.general.efield = config_node["general"]["efield_v_cm"].as<int>() * unit::volt / unit::cm;
+  cfg.general.temperature = config_node["general"]["temperature_k"].as<double>() * unit::kelvin;
   cfg.position.anode_pos_z = node_position["anode_pos_z_cm"].as<double>() * unit::cm;
 
-  std::cout << "gain_info_file: "       << cfg.energy.gain_info_file << std::endl;
-  std::cout << "efield_v_cm: "          << cfg.general.efield / (unit::volt/unit::cm)  << std::endl;
-  std::cout << "temperature_k: "        << cfg.general.temperature / unit::kelvin<< std::endl;
-  std::cout << "drift_time_max_us for energy calibration: "
-            << cfg.energy.max_time / unit::us << std::endl;
-  std::cout << "tp_channel: "           << cfg.energy.tp_channel     << std::endl;
-  std::cout << "ccal: "                 << cfg.energy.ccal           << std::endl;
-  std::cout << "anode_pos_z_cm: "       << cfg.position.anode_pos_z / unit::cm << std::endl;
+  std::cout << "gain_info_file: " << cfg.energy.gain_info_file << std::endl;
+  std::cout << "efield_v_cm: " << cfg.general.efield / (unit::volt / unit::cm) << std::endl;
+  std::cout << "temperature_k: " << cfg.general.temperature / unit::kelvin << std::endl;
+  std::cout << "drift_time_max_us for energy calibration: " << cfg.energy.max_time / unit::us << std::endl;
+  std::cout << "tp_channel: " << cfg.energy.tp_channel << std::endl;
+  std::cout << "ccal: " << cfg.energy.ccal << std::endl;
+  std::cout << "anode_pos_z_cm: " << cfg.position.anode_pos_z / unit::cm << std::endl;
 
   return cfg;
 }
@@ -299,24 +281,20 @@ std::string timeIdFromTPCTreePath(const std::string& tpctree_file)
   if (isFlatTimeId(clock)) {
     return normalizeTimeId(clock);
   }
-  const std::string date  = path.parent_path().parent_path().filename().string();
+  const std::string date = path.parent_path().parent_path().filename().string();
   if (!isTimeIdDate(date) || !isTimeIdClock(clock)) {
-    throw std::runtime_error("Cannot derive YYYYMMDD/HHMM_SS from TPC tree path: " +
-                             tpctree_file);
+    throw std::runtime_error("Cannot derive YYYYMMDD/HHMM_SS from TPC tree path: " + tpctree_file);
   }
   return date + "/" + clock;
 }
 
-std::array<double, NUM_VATA> interpolatedTestPulseGainsFromCsv(
-    const fs::path& csv_path,
-    const std::string& target_time_id)
+std::array<double, NUM_VATA> interpolatedTestPulseGainsFromCsv(const fs::path& csv_path,
+                                                               const std::string& target_time_id)
 {
-  return interpolatedTestPulseGains(readTestPulseGainTable(csv_path),
-                                   parseTimestamp(target_time_id));
+  return interpolatedTestPulseGains(readTestPulseGainTable(csv_path), parseTimestamp(target_time_id));
 }
 
-std::array<double, NUM_VATA> fixedTestPulseGainsFromHash(
-    const std::map<std::string, double>& gain_tp_dict)
+std::array<double, NUM_VATA> fixedTestPulseGainsFromHash(const std::map<std::string, double>& gain_tp_dict)
 {
   std::array<double, NUM_VATA> gains{};
   gains.fill(std::numeric_limits<double>::quiet_NaN());
@@ -327,15 +305,15 @@ std::array<double, NUM_VATA> fixedTestPulseGainsFromHash(
 
     if (const auto it = gain_tp_dict.find(numeric_key); it != gain_tp_dict.end()) {
       gains[fec] = it->second;
-    } else if (const auto it = gain_tp_dict.find(fec_key); it != gain_tp_dict.end()) {
+    }
+    else if (const auto it = gain_tp_dict.find(fec_key); it != gain_tp_dict.end()) {
       gains[fec] = it->second;
     }
 
     if (!std::isfinite(gains[fec]) || gains[fec] <= 0.0) {
-      throw std::runtime_error(
-          std::format("gain_tp_hash must provide positive values for FEC0-FEC3. "
-                      "Missing or invalid FEC{}.",
-                      fec));
+      throw std::runtime_error(std::format("gain_tp_hash must provide positive values for FEC0-FEC3. "
+                                           "Missing or invalid FEC{}.",
+                                           fec));
     }
   }
 
@@ -356,8 +334,7 @@ double electronDriftVelocity(double temperature, double e_field)
   constexpr double t0 = 90.371;
   const double vd_nodim =
       (p1 * (temperature_nodim - t0) + 1.0) *
-          (p3 * efield_nodim * std::log(1.0 + p4 / efield_nodim) +
-           p5 * std::pow(efield_nodim, p6)) +
+          (p3 * efield_nodim * std::log(1.0 + p4 / efield_nodim) + p5 * std::pow(efield_nodim, p6)) +
       p2 * (temperature_nodim - t0);
 
   return vd_nodim * unit::mm / unit::us;

@@ -38,16 +38,7 @@ include(ANLNextSwigPython)
 anlnext_add_swig_python_binding(${TARGET_EXT_LIBRARY}
   INTERFACE_FILE ${SWIG_IF_FILE}
   INCLUDE_DIRECTORIES ${PYTHON_EXT_INCLUDE_DIRS}
-  LIBRARIES
-    CSAstroH
-    CSSimulation
-    CSModules
-    CSCore
-    ${ANLG4_LIB}
-    ${ANLNEXT_LIB}
-    ${ROOT_LIB}
-    ${G4_LIB}
-    ${CLHEP_LIB}
+  LIBRARIES ComptonSoftCore ComptonSoftApplications
   COMPILE_DEFINITIONS ${cxx_definitions}
   SWIG_FLAGS ${cxx_definitions}
   INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/comptonsoft

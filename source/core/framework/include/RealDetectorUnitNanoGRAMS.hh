@@ -17,30 +17,26 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_SimDetectorUnitFactory_H
-#define COMPTONSOFT_SimDetectorUnitFactory_H 1
-
-#include "VDetectorUnitFactory.hh"
-
+#ifndef COMPTONSOFT_RealDetectorUnitNanoGRAMS_hh
+#define COMPTONSOFT_RealDetectorUnitNanoGRAMS_hh 1
+#include "NanoGRAMSTPCProperty.hh"
+#include "RealDetectorUnitLArTPCPixel.hh"
 namespace comptonsoft {
-
-/**
- * An abstract factory class for real detector units.
- * @author Hirokazu Odaka
- * @date 2014-11-14
- */
-class SimDetectorUnitFactory : public VDetectorUnitFactory
+class RealDetectorUnitNanoGRAMS : public RealDetectorUnitLArTPCPixel
 {
 public:
-  VRealDetectorUnit* createDetectorUnit2DPixel() override;
-  VRealDetectorUnit* createDetectorUnit2DStrip() override;
-  VRealDetectorUnit* createDetectorUnitScintillator() override;
-  VRealDetectorUnit* createDetectorUnit3DVoxel() override;
-  VRealDetectorUnit* createDetectorUnitLArTPC() override;
-  VRealDetectorUnit* createDetectorUnitLArTPCPixel() override;
-  VRealDetectorUnit* createDetectorUnitNanoGRAMS() override;
+  RealDetectorUnitNanoGRAMS();
+  virtual ~RealDetectorUnitNanoGRAMS();
+
+  DetectorType Type() const override { return DetectorType::NanoGRAMS; }
+  ElectrodeSide ReadoutElectrode() const { return ElectrodeSide::Anode; }
+  bool isAnodeReadout() const { return true; }
+  bool isCathodeReadout() const { return false; }
+
+  bool isBottomSideReadout() const { return false; }
+  bool isUpSideReadout() const { return true; }
+
+private:
 };
-
-} /* namespace comptonsoft */
-
-#endif /* COMPTONSOFT_SimDetectorUnitFactory_H */
+} // namespace comptonsoft
+#endif

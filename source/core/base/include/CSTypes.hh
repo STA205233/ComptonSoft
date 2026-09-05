@@ -20,11 +20,11 @@
 #ifndef COMPTONSOFT_CSTypes_H
 #define COMPTONSOFT_CSTypes_H 1
 
-#include <tuple>
-#include <boost/multi_array.hpp>
-#include <CLHEP/Vector/TwoVector.h>
-#include <CLHEP/Vector/ThreeVector.h>
 #include <CLHEP/Vector/LorentzVector.h>
+#include <CLHEP/Vector/ThreeVector.h>
+#include <CLHEP/Vector/TwoVector.h>
+#include <boost/multi_array.hpp>
+#include <tuple>
 
 namespace comptonsoft {
 
@@ -32,15 +32,22 @@ typedef CLHEP::Hep2Vector vector2_t;
 typedef CLHEP::Hep3Vector vector3_t;
 typedef CLHEP::HepLorentzVector vector4_t;
 
-enum class ElectrodeSide { Undefined, Anode, Cathode };
+enum class ElectrodeSide
+{
+  Undefined,
+  Anode,
+  Cathode
+};
 
-enum class DetectorType : int {
-  PixelDetector=1,
-  DoubleSidedStripDetector=2,
-  Scintillator=3,
-  VoxelDetector=4,
-  LArTPC=5,
-  LArTPCPixel=6
+enum class DetectorType : int
+{
+  PixelDetector = 1,
+  DoubleSidedStripDetector = 2,
+  Scintillator = 3,
+  VoxelDetector = 4,
+  LArTPC = 5,
+  LArTPCPixel = 6,
+  NanoGRAMS = 7
 };
 
 using image_t = boost::multi_array<double, 2>;

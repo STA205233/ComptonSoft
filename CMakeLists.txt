@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 ### Definition of project
 project(ComptonSoft)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MODULE_PATH ${ComptonSoft_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
@@ -34,6 +34,7 @@ option(CS_USE_VIS_QT "enable visualization with Qt" ON)
 option(CS_USE_FITSIO "enable FITS IO" OFF)
 option(CS_USE_HEALPIX "enable HEALPix" OFF)
 option(CS_USE_ORT "enable ONNX Runtime" OFF)
+option(CS_USE_HDF5 "enable HDF5" OFF)
 option(CS_USE_HSQUICKLOOK "enable HSQuickLook" OFF)
 option(CS_USE_SIMX "enable SimX compatible simulation" OFF)
 option(CS_USE_VIS "enable visualization with OpenGL" OFF)
@@ -103,7 +104,7 @@ if(USE_RUBY)
 endif(USE_RUBY)
 
 if(USE_PYTHON)
-  add_subdirectory(pyext)
+  add_subdirectory(bindings/python)
 endif(USE_PYTHON)
 
 add_subdirectory(cmake)

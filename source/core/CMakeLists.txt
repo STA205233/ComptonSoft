@@ -34,6 +34,7 @@ set(ComptonSoftCore_Framework_Classes
   framework/src/RealDetectorUnit3DVoxel.cc
   framework/src/RealDetectorUnitLArTPC.cc
   framework/src/RealDetectorUnitLArTPCPixel.cc
+  framework/src/RealDetectorUnitNanoGRAMS.cc
   ### frame readout
   framework/src/FrameData.cc
   framework/src/OutlierStore.cc
@@ -171,6 +172,7 @@ target_include_directories(ComptonSoftCore
   detector_models/include
   simulation/include
   io/include
+  ../applications/missions/nanograms/include
 )
 
 target_compile_definitions(ComptonSoftCore

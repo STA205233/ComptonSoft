@@ -24,8 +24,7 @@
 #include "RealDetectorUnit3DVoxel.hh"
 #include "RealDetectorUnitLArTPC.hh"
 #include "RealDetectorUnitLArTPCPixel.hh"
-#include "MultiChannelData.hh"
-
+#include "RealDetectorUnitNanoGRAMS.hh"
 namespace comptonsoft {
 
 VRealDetectorUnit* RealDetectorUnitFactory::createDetectorUnit2DPixel()
@@ -58,4 +57,8 @@ VRealDetectorUnit* RealDetectorUnitFactory::createDetectorUnitLArTPCPixel()
   return new RealDetectorUnitLArTPCPixel;
 }
 
+VRealDetectorUnit* RealDetectorUnitFactory::createDetectorUnitNanoGRAMS()
+{
+  return new RealDetectorUnitNanoGRAMS;
+}
 } /* namespace comptonsoft */

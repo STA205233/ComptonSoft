@@ -38,6 +38,7 @@ public:
   VRealDetectorUnit* createDetectorUnit3DVoxel() override;
   VRealDetectorUnit* createDetectorUnitLArTPC() override;
   VRealDetectorUnit* createDetectorUnitLArTPCPixel() override;
+  VRealDetectorUnit* createDetectorUnitNanoGRAMS() override;
 };
 
 } /* namespace comptonsoft */

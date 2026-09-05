@@ -142,4 +142,6 @@ message("-- YAMLCPP_LIB: ${YAMLCPP_LIB}")
 ### HDF5 ###
 if(CS_USE_HDF5)
   find_package(HDF5 REQUIRED COMPONENTS C)
+  set(HDF5_LIB hdf5::hdf5)
+  message("-- HDF5: ${HDF5_LIB}")
 endif(CS_USE_HDF5)
