@@ -19,6 +19,7 @@ set(ComptonSoftCore_Framework_Classes
   framework/src/GainFunctionLinear.cc
   framework/src/GainFunctionCubic.cc
   framework/src/GainFunctionSpline.cc
+  framework/src/GainFunctionTF1.cc
   framework/src/MultiChannelData.cc
   framework/src/VChannelMap.cc
   framework/src/ChannelMap.cc
@@ -31,6 +32,8 @@ set(ComptonSoftCore_Framework_Classes
   framework/src/RealDetectorUnit2DStrip.cc
   framework/src/RealDetectorUnitScintillator.cc
   framework/src/RealDetectorUnit3DVoxel.cc
+  framework/src/RealDetectorUnitLArTPC.cc
+  framework/src/RealDetectorUnitLArTPCPixel.cc
   ### frame readout
   framework/src/FrameData.cc
   framework/src/OutlierStore.cc
@@ -75,12 +78,19 @@ set(ComptonSoftCore_DetectorModels_Classes
   detector_models/src/EFieldModel.cc
   detector_models/src/VDeviceSimulation.cc
   detector_models/src/DeviceSimulation.cc
+  detector_models/src/LArTPCDeviceSimulation.cc
   detector_models/src/SimDetectorUnit2DPixel.cc
   detector_models/src/SimDetectorUnit2DStrip.cc
   detector_models/src/SimDetectorUnitScintillator.cc
   detector_models/src/SimDetectorUnit3DVoxel.cc
+  detector_models/src/SimDetectorUnitLArTPC.cc
+  detector_models/src/SimDetectorUnitLArTPCPixel.cc
   detector_models/src/WeightingPotentialPixel.cc
   detector_models/src/WeightingPotentialStrip.cc
+  detector_models/src/VLArRecombinationModel.cc
+  detector_models/src/BirksModel.cc
+  detector_models/src/ModifiedBoxModel.cc
+  detector_models/src/LArRecombinationModelFactory.cc
   ### detector unit factory
   detector_models/src/SimDetectorUnitFactory.cc
 )

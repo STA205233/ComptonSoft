@@ -37,6 +37,7 @@ set(ComptonSoftApplications_ComptonCamera_Classes
   compton_camera/src/HY2020EventReconstructionAlgorithm.cc
   compton_camera/src/OberlackAlgorithm.cc
   compton_camera/src/TangoAlgorithm.cc
+  compton_camera/src/EventReconstructionWithKnownOrder.cc
   ### IO
   compton_camera/src/ComptonEventTreeIO.cc
   compton_camera/src/ComptonEventTreeIOWithInitialInfo.cc
@@ -54,6 +55,9 @@ set(ComptonSoftApplications_ComptonCamera_Modules
   compton_camera/src/EventReconstruction.cc
   compton_camera/src/SelectFullDeposit.cc
   compton_camera/src/ComptonEventFilter.cc
+  compton_camera/src/SetEnergy.cc
+  compton_camera/src/SetPosition.cc
+  compton_camera/src/CorrectRecombination.cc
   ### histograming
   compton_camera/src/HistogramEnergy1D.cc
   compton_camera/src/HistogramEnergy2D.cc
