@@ -138,3 +138,8 @@ find_package(yaml-cpp CONFIG REQUIRED)
 set(YAMLCPP_LIB yaml-cpp::yaml-cpp)
 
 message("-- YAMLCPP_LIB: ${YAMLCPP_LIB}")
+
+### HDF5 ###
+if(CS_USE_HDF5)
+  find_package(HDF5 REQUIRED COMPONENTS C)
+endif(CS_USE_HDF5)

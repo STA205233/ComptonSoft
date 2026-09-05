@@ -1,0 +1,57 @@
+/*************************************************************************
+ *                                                                       *
+ * Copyright (c) 2011 Hirokazu Odaka                                     *
+ *                                                                       *
+ * This program is free software: you can redistribute it and/or modify  *
+ * it under the terms of the GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3 of the License, or     *
+ * (at your option) any later version.                                   *
+ *                                                                       *
+ * This program is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ * GNU General Public License for more details.                          *
+ *                                                                       *
+ * You should have received a copy of the GNU General Public License     *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                       *
+ *************************************************************************/
+
+#ifndef COMPTONSOFT_WeightByInitialDirection_H
+#define COMPTONSOFT_WeightByInitialDirection_H 1
+
+#include <anlnext/BasicModule.hh>
+#include <memory>
+
+class TGraph;
+namespace anlgeant4 { class InitialInformation; }
+
+namespace comptonsoft {
+
+/**
+ *
+ * @author Hirokazu Odaka
+ * @date 2017-04-27
+ */
+class WeightByInitialDirection : public anlnext::BasicModule
+{
+  DEFINE_ANL_MODULE(WeightByInitialDirection, 1.0);
+public:
+  WeightByInitialDirection();
+  ~WeightByInitialDirection() = default;
+
+  anlnext::ANLStatus mod_define() override;
+  anlnext::ANLStatus mod_initialize() override;
+  anlnext::ANLStatus mod_analyze() override;
+
+private:
+  std::vector<double> dirz_vector_;
+  std::vector<double> weight_vector_;
+
+  anlgeant4::InitialInformation* initial_info_ = nullptr;
+  std::unique_ptr<TGraph> weight_function_;
+};
+
+} /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_WeightByInitialDirection_H */

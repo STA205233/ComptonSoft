@@ -1,0 +1,73 @@
+/*************************************************************************
+ *                                                                       *
+ * Copyright (c) 2011 Hirokazu Odaka                                     *
+ *                                                                       *
+ * This program is free software: you can redistribute it and/or modify  *
+ * it under the terms of the GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3 of the License, or     *
+ * (at your option) any later version.                                   *
+ *                                                                       *
+ * This program is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ * GNU General Public License for more details.                          *
+ *                                                                       *
+ * You should have received a copy of the GNU General Public License     *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                       *
+ *************************************************************************/
+
+#ifndef COMPTONSOFT_SelectHits_H
+#define COMPTONSOFT_SelectHits_H 1
+
+#include "VCSModule.hh"
+
+#include <map>
+#include <tuple>
+#include "CSHitCollection.hh"
+
+namespace comptonsoft {
+
+class SelectHits : public VCSModule
+{
+  DEFINE_ANL_MODULE(SelectHits, 3.0);
+public:
+  SelectHits();
+  ~SelectHits();
+
+  anlnext::ANLStatus mod_define() override;
+  anlnext::ANLStatus mod_initialize() override;
+  anlnext::ANLStatus mod_analyze() override;
+
+protected:
+  void insertHitIntoTheCollection(const DetectorHit_sptr& hit)
+  { hit_collection_->insertHit(hit); }
+
+private:
+  virtual bool setAnalysisParameters();
+  virtual void doProcessing();
+  virtual void collectHits();
+
+  virtual bool setThresholdEnergy(VRealDetectorUnit* detector,
+                                  double threshold,
+                                  double thresholdCathode,
+                                  double thresholdAnode);
+
+  bool setEnergyConsistencyCheckFunctions(VRealDetectorUnit* detector,
+                                          double lowerC0,
+                                          double lowerC1,
+                                          double upperC0,
+                                          double upperC1);
+
+private:
+  CSHitCollection* hit_collection_ = nullptr;
+
+  std::map<std::string,
+           std::tuple<int, int,
+                      double, double, double,
+                      double, double, double, double>> analysis_map_;
+};
+
+} /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_SelectHits_H */

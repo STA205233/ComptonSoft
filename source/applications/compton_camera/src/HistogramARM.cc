@@ -1,0 +1,109 @@
+/*************************************************************************
+ *                                                                       *
+ * Copyright (c) 2011 Hirokazu Odaka                                     *
+ *                                                                       *
+ * This program is free software: you can redistribute it and/or modify  *
+ * it under the terms of the GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3 of the License, or     *
+ * (at your option) any later version.                                   *
+ *                                                                       *
+ * This program is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ * GNU General Public License for more details.                          *
+ *                                                                       *
+ * You should have received a copy of the GNU General Public License     *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                       *
+ *************************************************************************/
+
+#include "HistogramARM.hh"
+
+#include "TH1.h"
+#include "AstroUnits.hh"
+#include "EventReconstruction.hh"
+#include "BasicComptonEvent.hh"
+
+using namespace anlnext;
+
+namespace unit = anlgeant4::unit;
+
+namespace comptonsoft
+{
+
+HistogramARM::HistogramARM()
+  : eventReconstruction_(nullptr),
+    num_bins_(500), range0_(-25.0), range1_(+25.0)
+{
+}
+
+ANLStatus HistogramARM::mod_define()
+{
+  define_parameter("number_of_bins", &mod_class::num_bins_);
+  define_parameter("range_min", &mod_class::range0_, 1.0, "degree");
+  define_parameter("range_max", &mod_class::range1_, 1.0, "degree");
+  return AS_OK;
+}
+
+ANLStatus HistogramARM::mod_initialize()
+{
+  get_module("EventReconstruction", &eventReconstruction_);
+
+  VCSModule::mod_initialize();
+  mkdir();
+
+  hist_all_ = new TH1D("arm_all", "ARM (All)",
+                       num_bins_, range0_, range1_);
+
+  const std::vector<HitPattern>& hitPatterns
+    = getDetectorManager()->getHitPatterns();
+  const std::size_t numHitPatterns = hitPatterns.size();
+  hist_vec_.resize(numHitPatterns);
+  for (std::size_t i=0; i<numHitPatterns; i++) {
+    std::string histName = "arm_";
+    std::string histTitle = "ARM (";
+    histName += hitPatterns[i].ShortName();
+    histTitle += hitPatterns[i].Name();
+    histTitle += ")";
+    hist_vec_[i] = new TH1D(histName.c_str(), histTitle.c_str(),
+                            num_bins_, range0_, range1_);
+  }
+
+  return AS_OK;
+}
+
+ANLStatus HistogramARM::mod_analyze()
+{
+  if (!evs("EventReconstruction:OK")) {
+    return AS_OK;
+  }
+
+  const std::vector<BasicComptonEvent_sptr> events = eventReconstruction_->getReconstructedEvents();
+  for (const auto& event: events) {
+    const double fraction = event->ReconstructionFraction();
+    const double cosThetaE = event->CosThetaE();
+    if (cosThetaE < -1.0 || +1.0 < cosThetaE) {
+      return AS_OK;
+    }
+
+    const double ARMValue = event->DeltaTheta()/unit::degree;
+    if (std::isnan(fraction)){
+      std::cerr << "Warning: NaN fraction for event with ID " << event->EventID() << std::endl;
+      continue;
+    }
+    if (std::isnan(ARMValue)) {
+      std::cerr << "Warning: NaN ARM value for event with ID " << event->EventID() << std::endl;
+      continue;
+    }
+    hist_all_->Fill(ARMValue, fraction);
+    for (std::size_t i=0; i<hist_vec_.size(); i++) {
+      if (eventReconstruction_->HitPatternFlag(i)) {
+        hist_vec_[i]->Fill(ARMValue, fraction);
+      }
+    }
+  }
+
+  return AS_OK;
+}
+
+} /* namespace comptonsoft */
