@@ -168,6 +168,22 @@ public:
   double RealPositionZ() const { return realPosition_.z(); }
   vector3_t RealPosition() const { return realPosition_; }
 
+  void setPreStepPointPosition(double x, double y, double z)
+  { preStepPointPosition_.set(x, y, z); }
+  void setPreStepPointPosition(const vector3_t& v) { preStepPointPosition_ = v; }
+  double PreStepPointPositionX() const { return preStepPointPosition_.x(); }
+  double PreStepPointPositionY() const { return preStepPointPosition_.y(); }
+  double PreStepPointPositionZ() const { return preStepPointPosition_.z(); }
+  vector3_t PreStepPointPosition() const { return preStepPointPosition_; }
+
+  void setPostStepPointPosition(double x, double y, double z)
+  { postStepPointPosition_.set(x, y, z); }
+  void setPostStepPointPosition(const vector3_t& v) { postStepPointPosition_ = v; }
+  double PostStepPointPositionX() const { return postStepPointPosition_.x(); }
+  double PostStepPointPositionY() const { return postStepPointPosition_.y(); }
+  double PostStepPointPositionZ() const { return postStepPointPosition_.z(); }
+  vector3_t PostStepPointPosition() const { return postStepPointPosition_; }
+
   double StepLength() const { return stepLength_; }
   void setStepLength(double v) { stepLength_ = v; }
 
@@ -326,6 +342,8 @@ private:
   double realTime_ = 0.0;
   int timeGroup_ = 0;
   vector3_t realPosition_{0.0, 0.0, 0.0};
+  vector3_t preStepPointPosition_{0.0, 0.0, 0.0};
+  vector3_t postStepPointPosition_{0.0, 0.0, 0.0};
   double stepLength_ = 0.0;
   const G4MaterialCutsCouple* materialCutsCouple_ = nullptr;
   double energyDeposit_ = 0.0;
