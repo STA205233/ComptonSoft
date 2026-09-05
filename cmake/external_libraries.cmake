@@ -1,6 +1,5 @@
 ### BOOST ###
-find_package(Boost 1.80.0 CONFIG COMPONENTS system filesystem)
-# find_package(Boost 1.56.0 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.80.0 CONFIG COMPONENTS filesystem)
 set(BOOST_INC_DIR ${Boost_INCLUDE_DIRS})
 set(BOOST_LIB_DIR ${Boost_LIBRARY_DIRS})
 set(BOOST_LIB ${Boost_LIBRARIES})
@@ -11,7 +10,7 @@ message("-- BOOST_LIB: ${BOOST_LIB}")
 ### Workaround for Clang-15 not to use std::unary_function
 add_compile_definitions(_HAS_AUTO_PTR_ETC=FALSE)
 
-### ANL ###
+### ANLNext ###
 if(NOT DEFINED ANLNEXT_INSTALL)
   if(DEFINED ENV{ANLNEXT_INSTALL})
     set(ANLNEXT_INSTALL $ENV{ANLNEXT_INSTALL})
@@ -37,8 +36,8 @@ message("-- ROOTSYS = ${ROOTSYS}")
 message("-- ROOT_INC_DIR = ${ROOT_INC_DIR}")
 message("-- ROOT_LIB_DIR = ${ROOT_LIB_DIR}")
 message("-- ROOT libraries = ${ROOT_LIB}")
-add_definitions(-DUSE_ROOT)
-add_definitions(-DCS_BASIC2)
+add_compile_definitions(USE_ROOT=TRUE)
+add_compile_definitions(CS_BASIC2=TRUE)
 
 ### Geant4 ###
 find_package(Geant4 REQUIRED)
@@ -54,7 +53,6 @@ message("-- Geant4 libraries: ${G4_LIB}")
 
 ### CLHEP ###
 if(CS_USE_SYSTEM_CLHEP)
-  add_definitions(-DANLNEXT_USE_HEPVECTOR)
   set(CLHEP_BASE_DIR $ENV{CLHEP_BASE_DIR})
   set(CLHEP_INC_DIR ${CLHEP_BASE_DIR}/include)
   set(CLHEP_LIB_DIR ${CLHEP_BASE_DIR}/lib)
@@ -115,3 +113,21 @@ if(CS_USE_GDML)
   message("-- XercesC_INCLUDE_DIRS: ${XercesC_INCLUDE_DIRS}")
   message("-- XercesC_LIBRARIES: ${XercesC_LIBRARIES}")
 endif(CS_USE_GDML)
+
+### ONNX ###
+if(CS_USE_ORT)
+  add_compile_definitions(CS_USE_ORT=1)
+
+  if(ONNXRUNTIME_ROOT)
+    list(APPEND CMAKE_PREFIX_PATH "${ONNXRUNTIME_ROOT}")
+    find_package(ONNXRuntime MODULE REQUIRED)
+    set(ORT_INC_DIR ${ONNXRuntime_INCLUDE_DIR})
+    set(ORT_LIB ${ONNXRuntime_LIBRARY})
+  else()
+    find_package(ONNXRuntime CONFIG REQUIRED)
+    set(ORT_LIB onnxruntime::onnxruntime)
+  endif()
+
+  message("-- ORT_INC_DIR: ${ORT_INC_DIR}")
+  message("-- ORT_LIB: ${ORT_LIB}")
+endif(CS_USE_ORT)

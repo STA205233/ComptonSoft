@@ -11,6 +11,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "CXX_FLAGS for release")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "C_FLAGS for release")
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 ### Definition of project
 project(ComptonSoft)
@@ -21,33 +22,40 @@ message("-- Install destination prefix: ${CMAKE_INSTALL_PREFIX}")
 list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 ### options
-## interface options
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+#### interface options
 option(CS_USE_RUBY "enable Ruby binding" ON)
 option(CS_USE_PYTHON "enable Python binding (anlgeant4)" ON)
 option(CS_USE_EXE "enable standalone executables" OFF)
-## library options
+#### library options
 option(CS_USE_GDML "enable GDML" ON)
 option(CS_USE_VIS_QT "enable visualization with Qt" ON)
 option(CS_USE_FITSIO "enable FITS IO" OFF)
 option(CS_USE_HEALPIX "enable HEALPix" OFF)
+option(CS_USE_ORT "enable ONNX Runtime" OFF)
 option(CS_USE_HSQUICKLOOK "enable HSQuickLook" OFF)
 option(CS_USE_SIMX "enable SimX compatible simulation" OFF)
 option(CS_USE_VIS "enable visualization with OpenGL" OFF)
 option(CS_USE_SYSTEM_CLHEP "use system-clhep" OFF)
-## install options
+#### install options
 option(CS_INSTALL_HEADERS "install all header files" ON)
 option(CS_INSTALL_CMAKE_FILES "install all cmake files" ON)
-## shortcut options
+#### shortcut options
 option(CS_ALL "enable all consistent library options" OFF)
 option(CS_ALL_OFF "disable all consistent library options" OFF)
 option(CS_HARD_ALL "enable all library options" OFF)
 
+### external library path options
+set(ONNXRUNTIME_ROOT "" CACHE PATH "Path to ONNX Runtime installation")
+
+### initialize variables
 if(CS_ALL)
   set(CS_USE_GDML ON)
   set(CS_USE_VIS_QT ON)
   set(CS_USE_FITSIO ON)
   set(CS_USE_HEALPIX ON)
   set(CS_USE_HSQUICKLOOK ON)
+  set(CS_USE_ORT ON)
 endif(CS_ALL)
 
 if(CS_ALL_OFF)
@@ -56,6 +64,7 @@ if(CS_ALL_OFF)
   set(CS_USE_FITSIO OFF)
   set(CS_USE_HEALPIX OFF)
   set(CS_USE_HSQUICKLOOK OFF)
+  set(CS_USE_ORT OFF)
 endif(CS_ALL_OFF)
 
 if(CS_HARD_ALL)
@@ -65,6 +74,7 @@ if(CS_HARD_ALL)
   set(CS_USE_HEALPIX ON)
   set(CS_USE_HSQUICKLOOK ON)
   set(CS_USE_SIMX ON)
+  set(CS_USE_ORT ON)
 endif(CS_HARD_ALL)
 
 set(USE_RUBY ${CS_USE_RUBY})
@@ -88,7 +98,7 @@ if(USE_EXE)
 endif(USE_EXE)
 
 if(USE_RUBY)
-  add_subdirectory(rubyext)
+  add_subdirectory(bindings/ruby)
 endif(USE_RUBY)
 
 add_subdirectory(cmake)

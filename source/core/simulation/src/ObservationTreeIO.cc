@@ -1,0 +1,155 @@
+/*************************************************************************
+ *                                                                       *
+ * Copyright (c) 2011 Hirokazu Odaka                                     *
+ *                                                                       *
+ * This program is free software: you can redistribute it and/or modify  *
+ * it under the terms of the GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3 of the License, or     *
+ * (at your option) any later version.                                   *
+ *                                                                       *
+ * This program is distributed in the hope that it will be useful,       *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ * GNU General Public License for more details.                          *
+ *                                                                       *
+ * You should have received a copy of the GNU General Public License     *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>. *
+ *                                                                       *
+ *************************************************************************/
+
+#include "ObservationTreeIO.hh"
+#include <sstream>
+#include "AstroUnits.hh"
+#include "TTree.h"
+#include "CSException.hh"
+
+namespace unit = anlgeant4::unit;
+
+namespace comptonsoft
+{
+
+ObservationTreeIO::ObservationTreeIO()
+  : tree_(nullptr)
+{
+}
+
+ObservationTreeIO::~ObservationTreeIO() = default;
+
+void ObservationTreeIO::define_branches()
+{
+  tree_->Branch("runid",    &runid_,    "runid/I");
+  tree_->Branch("eventid",  &eventid_,  "eventid/I");
+  tree_->Branch("num",      &num_,      "num/I");
+  tree_->Branch("trackid",  &trackid_,  "trackid/I");
+  tree_->Branch("particle", &particle_, "particle/I");
+  tree_->Branch("time",     &time_,     "time/D");
+  tree_->Branch("posx",     &posx_,     "posx/F");
+  tree_->Branch("posy",     &posy_,     "posy/F");
+  tree_->Branch("posz",     &posz_,     "posz/F");
+  tree_->Branch("energy",   &energy_,   "energy/F");
+  tree_->Branch("dirx",     &dirx_,     "dirx/F");
+  tree_->Branch("diry",     &diry_,     "diry/F");
+  tree_->Branch("dirz",     &dirz_,     "dirz/F");
+  tree_->Branch("polarx",   &polarx_,   "polarx/F");
+  tree_->Branch("polary",   &polary_,   "polary/F");
+  tree_->Branch("polarz",   &polarz_,   "polarz/F");
+}
+
+void ObservationTreeIO::set_branch_addresses()
+{
+  tree_->SetBranchAddress("runid",    &runid_);
+  tree_->SetBranchAddress("eventid",  &eventid_);
+  tree_->SetBranchAddress("num",      &num_);
+  tree_->SetBranchAddress("trackid",  &trackid_);
+  tree_->SetBranchAddress("particle", &particle_);
+  tree_->SetBranchAddress("time",     &time_);
+  tree_->SetBranchAddress("posx",     &posx_);
+  tree_->SetBranchAddress("posy",     &posy_);
+  tree_->SetBranchAddress("posz",     &posz_);
+  tree_->SetBranchAddress("energy",   &energy_);
+  tree_->SetBranchAddress("dirx",     &dirx_);
+  tree_->SetBranchAddress("diry",     &diry_);
+  tree_->SetBranchAddress("dirz",     &dirz_);
+  tree_->SetBranchAddress("polarx",   &polarx_);
+  tree_->SetBranchAddress("polary",   &polary_);
+  tree_->SetBranchAddress("polarz",   &polarz_);
+}
+
+void ObservationTreeIO::
+fill_particles(const int32_t run_id,
+               const int32_t event_id,
+               const std::vector<ObservedParticle>& particles)
+{
+  runid_ = run_id;
+  eventid_ = event_id;
+
+  const std::size_t NumParticles = particles.size();
+  num_ = static_cast<int32_t>(NumParticles);
+
+  for (std::size_t i=0; i<NumParticles; i++) {
+    const ObservedParticle& particle = particles[i];
+    trackid_ = particle.trackid;
+    particle_ = particle.particle;
+    time_ = particle.time / unit::second;
+    posx_ = static_cast<float>(particle.position.x()/unit::cm);
+    posy_ = static_cast<float>(particle.position.y()/unit::cm);
+    posz_ = static_cast<float>(particle.position.z()/unit::cm);
+    energy_ = static_cast<float>(particle.energy/unit::keV);
+    dirx_ = static_cast<float>(particle.direction.x());
+    diry_ = static_cast<float>(particle.direction.y());
+    dirz_ = static_cast<float>(particle.direction.z());
+    polarx_ = static_cast<float>(particle.polarization.x());
+    polary_ = static_cast<float>(particle.polarization.y());
+    polarz_ = static_cast<float>(particle.polarization.z());
+
+    tree_->Fill();
+  }
+}
+
+ObservedParticle ObservationTreeIO::retrieve_particle() const
+{
+  ObservedParticle particle;
+  particle.trackid = trackid_;
+  particle.particle = particle_;
+  particle.time = time_ * unit::second;
+  particle.position.set(posx_*unit::cm, posy_*unit::cm, posz_*unit::cm);
+  particle.energy = energy_ * unit::keV;
+  particle.direction.set(dirx_, diry_, dirz_);
+  particle.polarization.set(polarx_, polary_, polarz_);
+
+  return particle;
+}
+
+std::pair<int, std::vector<ObservedParticle>>
+ObservationTreeIO::retrieve_particles(int64_t& entry, bool get_first_entry)
+{
+  std::vector<ObservedParticle> particles;
+
+  if (get_first_entry) {
+    tree_->GetEntry(entry);
+  }
+
+  const int this_run_id = runid_;
+  const int this_event_id = eventid_;
+  const std::size_t num = get_number_of_particles();
+  for (std::size_t i=0; i<num; i++) {
+    if (i != 0) {
+      tree_->GetEntry(entry+i);
+
+      if (eventid_ != this_event_id || runid_ != this_run_id) {
+        std::ostringstream message;
+        message << "Error: inconsistent Event ID at "
+                << this_event_id << '\n';
+        BOOST_THROW_EXCEPTION( CSException(message.str()) );
+      }
+    }
+
+    ObservedParticle particle = retrieve_particle();
+    particles.push_back(std::move(particle));
+  }
+
+  entry += num;
+  return std::make_pair(this_event_id, particles);
+}
+
+} /* namespace comptonsoft */
