@@ -5,12 +5,13 @@
 #include <vector>
 namespace ngUtil {
 /**s
- * @brief Class for ROOT I/O of Grouped Dpp List Data 
+ * @brief Class for ROOT I/O of Grouped Dpp List Data
  * @author Shota Arai
  * @date 2024/11/XX First version
  * @date 2025/01/12 This class is not used in the current version
  */
-class DppListDataDefinition {
+class DppListDataDefinition
+{
 private:
   static constexpr int MAX_WAVENUM = 8000;
   static constexpr int SIZE_LIST_DATA = 10;
@@ -37,23 +38,23 @@ private:
   int version_ = 2;
   int sizeWaveHeader_ = SIZE_WAVE_HEADER_V2;
   /// @brief Flag for strictness of the data interpretation
-  /// @details Default: Basic error (channel, header, consistency of the data size). These are essential for the data interpretation.
-  /// 1th bit: wavenum, which is allowed between 1 and MAX_WAVENUM (8000).
-  /// 2th bit: wave data value range, which is allowed between -8191 and 8191.
+  /// @details Default: Basic error (channel, header, consistency of the data size). These are essential for the data
+  /// interpretation. 1th bit: wavenum, which is allowed between 1 and MAX_WAVENUM (8000). 2th bit: wave data value
+  /// range, which is allowed between -8191 and 8191.
   unsigned int strictFlag_ = 1;
 
 public:
   DppListDataDefinition(int version = 2);
   ~DppListDataDefinition() = default;
-  DppListDataDefinition(const DppListDataDefinition &r) = default;
+  DppListDataDefinition(const DppListDataDefinition& r) = default;
 
 private:
-  int InterpretList(const std::deque<char> &data);
-  int InterpretListWave(const std::deque<char> &data, const std::array<uint16_t, NUM_CH> &wave_num_array);
+  int InterpretList(const std::deque<char>& data);
+  int InterpretListWave(const std::deque<char>& data, const std::array<uint16_t, NUM_CH>& wave_num_array);
 
 public:
   void SetStrictFlag(unsigned int strictFlag) { strictFlag_ = strictFlag; }
-  int Interpret(const std::deque<char> &data, const std::array<uint16_t, NUM_CH> &wave_num_array);
+  int Interpret(const std::deque<char>& data, const std::array<uint16_t, NUM_CH>& wave_num_array);
   void SetVerbose(int verbose) { verbose_ = verbose; }
   void SetEventID(uint64_t eventid) { eventid_ = eventid; }
   uint64_t GetEventID() const { return eventid_; }
@@ -69,9 +70,10 @@ public:
   void SetWaveNum(uint16_t waveNum) { waveNum_ = waveNum; }
   int GetHeader() const { return header_; }
   void SetHeader(int header) { header_ = header; }
-  const std::vector<int16_t> &GetWaveData() const { return waveData_; }
-  void SetWaveData(const std::vector<int16_t> &waveData) { waveData_ = waveData; }
-  void SetWaveData(const std::array<int16_t, MAX_WAVENUM> &waveData) {
+  const std::vector<int16_t>& GetWaveData() const { return waveData_; }
+  void SetWaveData(const std::vector<int16_t>& waveData) { waveData_ = waveData; }
+  void SetWaveData(const std::array<int16_t, MAX_WAVENUM>& waveData)
+  {
     waveData_.assign(waveData.begin(), waveData.end());
   }
   bool IsWaveList() const { return isWaveList_; }
@@ -94,4 +96,4 @@ public:
 
 } // namespace ngUtil
 
-#endif //DppListDataDefinition_hh
+#endif // DppListDataDefinition_hh

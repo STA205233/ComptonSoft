@@ -40,6 +40,8 @@ set(ComptonSoftCore_Framework_Classes
   framework/src/OutlierStore.cc
   framework/src/XrayEvent.cc
   framework/src/PolarizedXrayEvent.cc
+  ### Light readout
+  framework/src/LightData.cc
   ### detector unit factory
   framework/src/VDetectorUnitFactory.cc
   framework/src/RealDetectorUnitFactory.cc

@@ -92,7 +92,8 @@ VRealDetectorUnit::VRealDetectorUnit()
       directionZ_(0.0, 0.0, 1.0),
       bottomSideElectrode_(ElectrodeSide::Undefined),
       reconstructionMode_(1), clusteringOn_(true), clusteringContactCondition_(true), clusteringEnergyThreshold_(0.0), clusteringSplitThreshold_(0.0), clusteringRange_(2),
-    channelMap_(nullptr)
+      channelMap_(nullptr),
+      light_data_(nullptr)
 {
 }
 
@@ -602,4 +603,8 @@ void VRealDetectorUnit::registerFrameData(std::unique_ptr<FrameData> &&frame) {
   frame_ = std::move(frame);
 }
 
+void VRealDetectorUnit::registerLightData(std::unique_ptr<LightData>&& ld)
+{
+  light_data_vector_.push_back(std::move(ld));
+}
 } /* namespace comptonsoft */

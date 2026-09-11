@@ -32,6 +32,7 @@ namespace comptonsoft {
 class VChannelMap;
 class MultiChannelData;
 class FrameData;
+class LightData;
 
 /**
  * A virtual class of a detector unit.
@@ -268,7 +269,7 @@ public:
   void initializeEvent() override;
   virtual void selectHits();
   void discriminateHits();
-  void reconstructHits();
+  virtual void reconstructHits();
 
   void recalculateEPI();
   void assignReadoutInfo();
@@ -294,6 +295,15 @@ public:
   bool hasFrameData() const { return (frame_.get()!=nullptr); }
   const FrameData* getFrameData() const { return frame_.get(); }
   FrameData* getFrameData() { return frame_.get(); }
+
+
+  /**
+   * methods related to light data
+   */
+  void registerLightData(std::unique_ptr<LightData>&& ld);
+  int NumberOfLightData() const { return light_data_vector_.size(); }
+  const LightData* getLightData(int i) const { return light_data_vector_[i].get(); }
+  LightData* getLightData(int i) { return light_data_vector_[i].get(); }
 
 protected:
   virtual bool setReconstructionDetails(int /* mode */) { return true; }
@@ -338,6 +348,8 @@ private:
   std::vector<DetectorHit_sptr> reconstructedHits_;
 
   std::unique_ptr<FrameData> frame_;
+
+  std::vector<std::unique_ptr<LightData>> light_data_vector_;
 
 private:
   VRealDetectorUnit(const VRealDetectorUnit&) = delete;

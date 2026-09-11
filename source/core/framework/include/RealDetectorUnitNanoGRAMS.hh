@@ -19,9 +19,9 @@
 
 #ifndef COMPTONSOFT_RealDetectorUnitNanoGRAMS_hh
 #define COMPTONSOFT_RealDetectorUnitNanoGRAMS_hh 1
-#include "NanoGRAMSTPCProperty.hh"
 #include "RealDetectorUnitLArTPCPixel.hh"
 namespace comptonsoft {
+class VRealDetectorUnit;
 class RealDetectorUnitNanoGRAMS : public RealDetectorUnitLArTPCPixel
 {
 public:
@@ -35,8 +35,7 @@ public:
 
   bool isBottomSideReadout() const { return false; }
   bool isUpSideReadout() const { return true; }
-
-private:
+  void reconstructHits() override;
 };
 } // namespace comptonsoft
 #endif

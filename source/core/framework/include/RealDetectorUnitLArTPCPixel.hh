@@ -20,16 +20,20 @@
 #ifndef COMPTONSOFT_RealDetectorUnitLArTPCPixel_H
 #define COMPTONSOFT_RealDetectorUnitLArTPCPixel_H 1
 
-#include "VRealDetectorUnit.hh"
 #include "CLHEP/Units/SystemOfUnits.h"
-#include "TH1I.h"
 #include "TFile.h"
+#include "TH1I.h"
 #include "VGainFunction.hh"
+#include "VRealDetectorUnit.hh"
 
 class TH1I;
 class TFile;
 namespace comptonsoft {
 class VGainFunction;
+
+namespace grams {
+class RawFECHit;
+}
 
 /**
  * A class of a LArTPCPixel detector unit.
@@ -38,7 +42,8 @@ class VGainFunction;
  * @date 2026-02-21 | added recombination correction
  * @date 2026-04-18 | implemented recombination correction with charge only
  */
-class RealDetectorUnitLArTPCPixel: public VRealDetectorUnit {
+class RealDetectorUnitLArTPCPixel : public VRealDetectorUnit
+{
 public:
   RealDetectorUnitLArTPCPixel();
   virtual ~RealDetectorUnitLArTPCPixel();
@@ -49,13 +54,13 @@ public:
   ElectrodeSide ReadoutElectrode() const { return readoutElectrode_; }
   bool isAnodeReadout() const { return ReadoutElectrode() == ElectrodeSide::Anode; }
   bool isCathodeReadout() const { return ReadoutElectrode() == ElectrodeSide::Cathode; }
-  bool isBottomSideReadout() const {
-    return (ReadoutElectrode() != ElectrodeSide::Undefined &&
-            ReadoutElectrode() == BottomSideElectrode());
+  bool isBottomSideReadout() const
+  {
+    return (ReadoutElectrode() != ElectrodeSide::Undefined && ReadoutElectrode() == BottomSideElectrode());
   }
-  bool isUpSideReadout() const {
-    return (ReadoutElectrode() != ElectrodeSide::Undefined &&
-            ReadoutElectrode() != BottomSideElectrode());
+  bool isUpSideReadout() const
+  {
+    return (ReadoutElectrode() != ElectrodeSide::Undefined && ReadoutElectrode() != BottomSideElectrode());
   }
   int recombinationCorrectionMode() const { return recombinationCorrectionMode_; }
   void setRecombinationCorrectionMode(int v) { recombinationCorrectionMode_ = v; }
@@ -64,35 +69,36 @@ public:
   double Wion() const { return Wion_; }
   void setWexc(double v) { Wexc_ = v; }
   double Wexc() const { return Wexc_; }
-  
+
   void setPhotonDetectionEfficiency(double v) { photonDetectionEfficiencyInv_ = 1.0 / v; }
   double PhotonDetectionEfficiency() const { return 1.0 / photonDetectionEfficiencyInv_; }
-  void correctPhotonDetectionEfficiency(DetectorHitVector &hits) const;
-  
+  void correctPhotonDetectionEfficiency(DetectorHitVector& hits) const;
+
   void printDetectorParameters(std::ostream& os) const override;
-  void applyRecombinationCorrection(DetectorHitVector &hits) const override;
-  void setRecombinationCorrectionFile(const std::string &filename, const std::string &meta_tree_name);
+  void applyRecombinationCorrection(DetectorHitVector& hits) const override;
+  void setRecombinationCorrectionFile(const std::string& filename, const std::string& meta_tree_name);
 
 protected:
   bool setReconstructionDetails(int mode) override;
-  void reconstruct(const DetectorHitVector &hitSignals,
-                   DetectorHitVector &hitsReconstructed) override;
-    
+  void reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed) override;
+
 private:
-  void determinePosition(DetectorHitVector &hits) const;
-  std::tuple<double, double> applyRecombinationCorrectionWithLight(const DetectorHit_sptr &hit) const;
-  std::tuple<double, double> applyRecombinationCorrectionWithCorrectionFile(const DetectorHit_sptr &hit) const;
+  void determinePosition(DetectorHitVector& hits) const;
+  std::tuple<double, double> applyRecombinationCorrectionWithLight(const DetectorHit_sptr& hit) const;
+  std::tuple<double, double> applyRecombinationCorrectionWithCorrectionFile(const DetectorHit_sptr& hit) const;
 
 private:
   ElectrodeSide readoutElectrode_;
 
   int recombinationCorrectionMode_ = 1; // 0: off, 1: using light and charge, 2: using charge only
-  std::vector<VGainFunction *>recombinationCorrectionFunction_;
-  TH1I *recombinationCorrectionZMapping_ = nullptr;
-  TFile *recombinationCorrectionFile_ = nullptr;
+  std::vector<VGainFunction*> recombinationCorrectionFunction_;
+  TH1I* recombinationCorrectionZMapping_ = nullptr;
+  TFile* recombinationCorrectionFile_ = nullptr;
 
-  double Wion_ = 23.6 * CLHEP::eV; // Ionization energy in liquid argon
-  double Wexc_ = 19.5 * CLHEP::eV; // Excitation energy in liquid argon
+  std::vector<std::shared_ptr<LightData>> light_data_;
+
+  double Wion_ = 23.6 * CLHEP::eV;            // Ionization energy in liquid argon
+  double Wexc_ = 19.5 * CLHEP::eV;            // Excitation energy in liquid argon
   double photonDetectionEfficiencyInv_ = 1.0; // Inverse of photon detection efficiency
 };
 
