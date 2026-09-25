@@ -161,6 +161,8 @@ ANLStatus CorrectPHA::mod_analyze()
         mcd->subtractCommonModeNoise();
       }
 
+      mcd->correctPHA();
+
       if (gain_correction_) {
         bool ret = mcd->convertPHA2EPI();
         if (ret == false) {

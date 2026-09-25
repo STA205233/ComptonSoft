@@ -31,10 +31,6 @@ class TFile;
 namespace comptonsoft {
 class VGainFunction;
 
-namespace grams {
-class RawFECHit;
-}
-
 /**
  * A class of a LArTPCPixel detector unit.
  * @author Shota Arai
@@ -65,7 +61,7 @@ public:
   int recombinationCorrectionMode() const { return recombinationCorrectionMode_; }
   void setRecombinationCorrectionMode(int v) { recombinationCorrectionMode_ = v; }
 
-  void setWion(double v) { Wion_ = v; }
+  virtual void setWion(double v) { Wion_ = v; }
   double Wion() const { return Wion_; }
   void setWexc(double v) { Wexc_ = v; }
   double Wexc() const { return Wexc_; }
@@ -82,8 +78,10 @@ protected:
   bool setReconstructionDetails(int mode) override;
   void reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed) override;
 
-private:
+protected:
   void determinePosition(DetectorHitVector& hits) const;
+
+private:
   std::tuple<double, double> applyRecombinationCorrectionWithLight(const DetectorHit_sptr& hit) const;
   std::tuple<double, double> applyRecombinationCorrectionWithCorrectionFile(const DetectorHit_sptr& hit) const;
 

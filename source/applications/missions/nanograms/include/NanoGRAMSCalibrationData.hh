@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "AstroUnits.hh"
-#include "NanoGRAMSEvent.hh"
+#include "NanoGRAMSConstants.hh"
 
 namespace comptonsoft
 {
@@ -88,6 +88,18 @@ std::array<double, NUM_VATA> interpolatedTestPulseGainsFromCsv(
 
 std::array<double, NUM_VATA> fixedTestPulseGainsFromHash(
     const std::map<std::string, double>& gain_tp_dict);
+
+// cubic gain parameters of each channel, from the highest order: p0*x^3 + p1*x^2 + p2*x + p3
+constexpr int kNanoGRAMSNumGainParams = 4;
+using GainParamArray = std::array<double, kNanoGRAMSNumGainParams>;
+using GainMatrix = std::array<GainParamArray, NUM_CH_EACH_VATA>;
+
+/**
+ * read a gain matrix (e.g., "/FEC0/ADC2C", "/FEC0/ccal2ADC") from the HDF5 gain info file.
+ */
+GainMatrix loadGainMatrix(const std::filesystem::path& gain_info_path, const std::string& dataset_path);
+
+double evaluateGainCubic(double x, const GainParamArray& params);
 
 double electronDriftVelocity(double temperature, double e_field);
 

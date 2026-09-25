@@ -20,6 +20,7 @@
 #ifndef COMPTONSOFT_NanoGRAMSReadTPCEvents_H
 #define COMPTONSOFT_NanoGRAMSReadTPCEvents_H 1
 
+#include <array>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -28,14 +29,15 @@
 #include <vector>
 
 #include "NanoGRAMSCalibrationData.hh"
+#include "NanoGRAMSConfig.hh"
 #include "NanoGRAMSTPCDataProcessor.hh"
-#include "NanoGRAMSTPCProperty.hh"
 #include "VCSModule.hh"
 
 class TFile;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
+
+class NanoGRAMSTemperatureCorrection;
 
 class NanoGRAMSReadTPCEvents : public VCSModule
 {
@@ -45,63 +47,48 @@ public:
   NanoGRAMSReadTPCEvents();
   ~NanoGRAMSReadTPCEvents() override;
 
-  anlnext::ANLStatus mod_define()     override;
+  anlnext::ANLStatus mod_define() override;
   anlnext::ANLStatus mod_initialize() override;
-  anlnext::ANLStatus mod_analyze()    override;
-  anlnext::ANLStatus mod_end_run()    override;
+  anlnext::ANLStatus mod_analyze() override;
+  anlnext::ANLStatus mod_end_run() override;
 
-  bool hasCurrentEvent() const { return !current_event_hits_.empty(); }
-  int64_t currentEventId() const
-  {
-    if (hasCurrentEvent()) {
-      return gamma_events_ - 1;
-    }
-    return -1;
-  }
   int64_t currentRawEventId() const { return current_raw_event_id_; }
   int32_t runId() const { return run_id_; }
   uint32_t currentUnixTime() const { return current_unix_time_; }
-  const std::vector<grams::RawFECHit>& currentEventHits() const
-  {
-    return current_event_hits_;
-  }
-  grams::TPCEventType currentEventType() const
-  { return tpc_tree_reader_->currentEventType(); }
-  const grams::TPCTreeBuffer& currentTPCBuffer() const
-  { return tpc_tree_reader_->currentBuffer(); }
-  const TPCProperty& tpcProperty() const { return tpc_property_; }
+  const grams::TPCTreeBuffer& currentTPCBuffer() const { return tpc_tree_reader_->currentBuffer(); }
+  const grams::Config& config() const { return cfg_; }
   const std::string& configFilePath() const { return config_file_; }
 
 private:
   bool readNextTPCEvent(int64_t& raw_event_id);
   bool openNextTPCFile();
-  void setupTPCPropertyForHitSelection();
-  void updateGainCorrectionForCurrentEvent(uint32_t unix_time);
-  std::string config_file_     = "";
+  void setupCalibration();
+  void setupDetectorParameters(const std::array<GainMatrix, NUM_VATA>& adc2c,
+                               const std::shared_ptr<const NanoGRAMSTemperatureCorrection>& temperatureCorrection);
+  void fillEventsIntoDetectors();
+  void setupLightDataLayout();
+  void selectLightChannels();
+  std::string config_file_ = "";
   std::string dpp_config_file_ = "";
   std::vector<std::string> tpctree_files_;
-  std::string gain_tp_file_    = "";
+  std::string gain_tp_file_ = "";
   std::map<std::string, double> gain_tp_dict_;
   double gain_tp_value_ = 0.0;
-  double gain_cache_seconds_ = 60.0;
   int32_t run_id_ = 0;
 
   grams::Config cfg_;
   CalibrationConfig calibration_config_;
-  TestPulseGainTable gain_tp_table_;
-  TPCProperty tpc_property_;
   std::unique_ptr<TFile> input_file_;
   std::unique_ptr<grams::TPCTreeReader> tpc_tree_reader_;
   std::size_t input_file_index_ = 0;
-  int64_t gamma_events_         = 0;
-  int64_t processed_entries_    = 0;
+  int64_t skipped_error_events_ = 0;
+  int64_t processed_entries_ = 0;
   int64_t expected_tpc_entries_ = 0;
   int64_t current_raw_event_offset_ = 0;
   int64_t current_raw_event_id_ = -1;
-  int64_t cached_gain_time_bin_ = std::numeric_limits<int64_t>::min();
   uint32_t current_unix_time_ = 0;
-  bool use_event_time_gain_ = false;
-  std::vector<grams::RawFECHit> current_event_hits_;
+  // DPP channels used in the light analysis (general or pileup); only these are filled into light data
+  std::array<bool, NUM_CH_DPP_MAX> light_channel_used_{};
 };
 
 } /* namespace comptonsoft */

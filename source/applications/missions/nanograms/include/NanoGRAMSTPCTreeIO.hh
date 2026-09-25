@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "NanoGRAMSEvent.hh"
+#include "NanoGRAMSConstants.hh"
 
 class TTree;
 

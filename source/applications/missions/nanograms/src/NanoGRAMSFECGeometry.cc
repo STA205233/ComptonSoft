@@ -42,21 +42,12 @@ int channelAtSectionCoordinate(const std::array<int, NUM_CH_EACH_VATA>& grid_to_
 
 std::pair<int, int> sectionCoordinate(int row_from_top, int col_from_left)
 {
-  return {col_from_left, kFECSectionSidePixels - 1 - row_from_top};
+  return nanograms::sectionCoordinate(row_from_top, col_from_left);
 }
 
 std::pair<int, int> sectionOrigin(int fec)
 {
-  if (fec == 0) {
-    return {0, 0};
-  }
-  if (fec == 1) {
-    return {kFECSectionSidePixels, 0};
-  }
-  if (fec == 2) {
-    return {kFECSectionSidePixels, kFECSectionSidePixels};
-  }
-  return {0, kFECSectionSidePixels};
+  return nanograms::FECSectionOrigin.at(fec);
 }
 
 } // namespace

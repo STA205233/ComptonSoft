@@ -30,26 +30,27 @@ using range_index_t = LightData::range_index_t;
 using range_t = LightData::range_t;
 
 LightData::LightData(int n_points, double t_width, double t_start)
-  : n_points_(n_points),
-    t_width_(t_width),
-    t_start_(t_start)
 {
-  if (t_width_ <= 0) {
-    BOOST_THROW_EXCEPTION(CSException("t_width must be positive"));
-  }
-  if (n_points_ <= 0) {
-    BOOST_THROW_EXCEPTION(CSException("n_points must be positive"));
-  }
-  time_.reserve(n_points_);
-  for (int i = 0; i < n_points_; ++i) {
-    time_.push_back(t_start_ + t_width_ * i);
-  }
-  raw_waveform_.resize(n_points_);
-  waveform_.resize(n_points_);
-  resetEventData();
+  setLayout(n_points, t_width, t_start);
 }
 
 LightData::~LightData() = default;
+
+void LightData::setLayout(int n_points, double t_width, double t_start)
+{
+  if (t_width <= 0) {
+    BOOST_THROW_EXCEPTION(CSException("t_width must be positive"));
+  }
+  if (n_points <= 0) {
+    BOOST_THROW_EXCEPTION(CSException("n_points must be positive"));
+  }
+  n_points_ = n_points;
+  t_width_ = t_width;
+  raw_waveform_.assign(n_points_, 0.0);
+  waveform_.assign(n_points_, 0.0);
+  resetTimeStart(t_start);
+  resetEventData();
+}
 
 double LightData::correctGainAtEachBin(double x) const
 {
@@ -152,6 +153,11 @@ double LightData::peak(const range_index_t& range) const
   const auto begin = waveform_.begin();
   auto iter = std::max_element(begin + start, begin + end);
   return *iter;
+}
+
+double LightData::peak(const range_t& range) const
+{
+  return peak(convertRange(range));
 }
 
 void LightData::resetEventData()

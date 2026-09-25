@@ -148,7 +148,10 @@ classList = [
   ANL::SWIGClass.new("FilterByGoodTimeIntervalsForHXI", false, 'USE_FITSIO'),
 
   ANL::SWIGClass.new("NanoGRAMSReadTPCEvents"),
-  ANL::SWIGClass.new("NanoGRAMSWriteHitTree"),
+  ANL::SWIGClass.new("NanoGRAMSCorrectLightWaveform"),
+  ANL::SWIGClass.new("NanoGRAMSAnalyzeLight"),
+  ANL::SWIGClass.new("NanoGRAMSSelectEvents"),
+  ANL::SWIGClass.new("NanoGRAMSQuickLookWriter"),
 ]
 
 classList.each{|s|

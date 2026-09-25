@@ -60,7 +60,15 @@ constexpr uint64_t Triggered     = 0x20000u;
 constexpr uint64_t HasRayleighScattering = 0x40000u;
 constexpr uint64_t RecombinationApplied = 0x80000u;
 constexpr uint64_t RecombinationNotApplied = 0x100000u;
+
+// NanoGRAMS cluster-level flags
+constexpr uint64_t NanoGRAMSTimeUp                = 0x200000u;  // drift time of the FEC is over the limit (or not available)
+constexpr uint64_t NanoGRAMSPixelCountOutOfRange  = 0x400000u;  // number of pixels is out of the allowed range
+constexpr uint64_t NanoGRAMSCollinear             = 0x800000u;  // three pixels on a line (cosmic-like)
+constexpr uint64_t NanoGRAMSMultipleClustersInFEC = 0x1000000u; // another pixel above the core threshold in the same FEC
 }
+
+
 
 namespace channel_status {
 constexpr int normal = 0;

@@ -42,12 +42,18 @@
 #include "RealDetectorUnit3DVoxel.hh"
 #include "RealDetectorUnitLArTPC.hh"
 #include "RealDetectorUnitLArTPCPixel.hh"
+#include "RealDetectorUnitNanoGRAMS.hh"
 #include "SimDetectorUnit2DPixel.hh"
 #include "SimDetectorUnit2DStrip.hh"
 #include "SimDetectorUnit3DVoxel.hh"
 #include "SimDetectorUnitLArTPC.hh"
 #include "SimDetectorUnitLArTPCPixel.hh"
+#include "SimDetectorUnitNanoGRAMS.hh"
 #include "MultiChannelData.hh"
+#include "NanoGRAMSMultiChannelData.hh"
+#include "NanoGRAMSChannelMap.hh"
+#include "ChannelMap.hh"
+#include "LightData.hh"
 #include "FrameData.hh"
 #include "GainFunctionCubic.hh"
 #include "DeviceSimulation.hh"
@@ -543,7 +549,23 @@ loadDCDetectorNode(const boost::property_tree::ptree& DetectorNode,
   }
 
   ptree::const_assoc_iterator sectionsNode = DetectorNode.find("sections");
-  if ( sectionsNode != DetectorNode.not_found() ) {
+  if (detector->checkType(DetectorType::NanoGRAMS)) {
+    // NanoGRAMS sections are fixed (section = FEC); the sections node is not used.
+    if ( sectionsNode != DetectorNode.not_found() ) {
+      std::cout << "DetectorSystem: sections node of NanoGRAMS detector (ID: "
+                << detector->getID() << ") is ignored." << std::endl;
+    }
+    for (int fec = 0; fec < RealDetectorUnitNanoGRAMS::NumFECs; ++fec) {
+      detector->registerMultiChannelData(std::make_unique<NanoGRAMSMultiChannelData>());
+    }
+    // the channel map is also fixed (ConstructChannelMap skips this detector)
+    detector->setChannelMap(nanograms::makeChannelMap());
+    // one light data for each DPP channel; the layout is set by the reader when the data file is opened.
+    for (int ch = 0; ch < RealDetectorUnitNanoGRAMS::NumLightChannels; ++ch) {
+      detector->registerLightData(std::make_unique<LightData>(1, 1.0 * unit::ns, 0.0));
+    }
+  }
+  else if ( sectionsNode != DetectorNode.not_found() ) {
     loadDCDetectorSectionsNode(sectionsNode->second, prioritySide, detector);
   }
 
@@ -592,12 +614,7 @@ loadDCDetectorSectionsNode(const boost::property_tree::ptree& SectionsNode,
       }
 
       auto mcd = std::make_unique<MultiChannelData>(numChannels, electrode);
-      if (electrode == priority_side) {
-        mcd->setPrioritySide(true);
-      }
-      else {
-        mcd->setPrioritySide(false);
-      }
+      mcd->setPrioritySide(electrode == priority_side);
       detector->registerMultiChannelData(std::move(mcd));
     }
     if (v.first == "frame") {
@@ -1401,6 +1418,27 @@ void DetectorSystem::setupReconstructionParameters(const DetectorSystem::Paramet
         const std::string tree_name = parameters.meta_name_for_recombination_correction ? *parameters.meta_name_for_recombination_correction : "meta";
         if (ds1) {
           ds1->setRecombinationCorrectionFile(*o, tree_name);
+        }
+      }
+    }
+  }
+  if (detector->checkType(DetectorType::NanoGRAMS)) {
+    if (auto* nano = dynamic_cast<RealDetectorUnitNanoGRAMS*>(detector)) {
+      if (auto o = parameters.recombination_correction) {
+        nano->setRecombinationCorrectionMode(*o);
+      }
+      if (auto o = parameters.w_ion) {
+        nano->setWion((*o) * unit::eV);
+      }
+      if (auto o = parameters.w_exc) {
+        nano->setWexc((*o) *unit::eV);
+      }
+      if (auto o = parameters.recombination_correction_file) {
+        const std::string tree_name = parameters.meta_name_for_recombination_correction
+                                          ? *parameters.meta_name_for_recombination_correction
+                                          : "meta";
+        if (nano) {
+          nano->setRecombinationCorrectionFile(*o, tree_name);
         }
       }
     }

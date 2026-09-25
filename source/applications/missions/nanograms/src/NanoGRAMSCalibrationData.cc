@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include <hdf5.h>
 #include <yaml-cpp/yaml.h>
 
 namespace comptonsoft {
@@ -338,6 +339,57 @@ double electronDriftVelocity(double temperature, double e_field)
       p2 * (temperature_nodim - t0);
 
   return vd_nodim * unit::mm / unit::us;
+}
+
+GainMatrix loadGainMatrix(const fs::path& gain_info_path, const std::string& dataset_path)
+{
+  GainMatrix matrix{};
+
+  const hid_t file = H5Fopen(gain_info_path.string().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  if (file < 0) {
+    throw std::runtime_error("Failed to open HDF5 file: " + gain_info_path.string());
+  }
+
+  const hid_t dataset = H5Dopen2(file, dataset_path.c_str(), H5P_DEFAULT);
+  if (dataset < 0) {
+    H5Fclose(file);
+    throw std::runtime_error("Failed to open HDF5 dataset: " + dataset_path);
+  }
+
+  const hid_t space = H5Dget_space(dataset);
+  if (space < 0) {
+    H5Dclose(dataset);
+    H5Fclose(file);
+    throw std::runtime_error("Failed to query HDF5 dataspace: " + dataset_path);
+  }
+
+  const int ndims = H5Sget_simple_extent_ndims(space);
+  std::vector<hsize_t> dims(static_cast<std::size_t>(ndims), 0);
+  H5Sget_simple_extent_dims(space, dims.data(), nullptr);
+
+  std::vector<double> values(dims[0] * dims[1], 0.0);
+  const herr_t status = H5Dread(dataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
+
+  H5Sclose(space);
+  H5Dclose(dataset);
+  H5Fclose(file);
+
+  if (status < 0) {
+    throw std::runtime_error("Failed to read HDF5 dataset: " + dataset_path);
+  }
+
+  for (int ch = 0; ch < NUM_CH_EACH_VATA; ++ch) {
+    for (int par = 0; par < kNanoGRAMSNumGainParams; ++par) {
+      matrix[ch][par] = values[static_cast<std::size_t>(kNanoGRAMSNumGainParams * ch + par)];
+    }
+  }
+
+  return matrix;
+}
+
+double evaluateGainCubic(double x, const GainParamArray& params)
+{
+  return params[0] * x * x * x + params[1] * x * x + params[2] * x + params[3];
 }
 
 } /* namespace comptonsoft */

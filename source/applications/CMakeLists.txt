@@ -242,18 +242,16 @@ set(ComptonSoftApplications_Missions_NanoGRAMS_Classes
   ### configuration and detector description
   missions/nanograms/src/NanoGRAMSConfig.cc
   missions/nanograms/src/NanoGRAMSFECGeometry.cc
-  missions/nanograms/src/NanoGRAMSTPCProperty.cc
   ### data format
   missions/nanograms/src/DppListDataDefinition.cc
   missions/nanograms/src/NanoGRAMSTPCTreeIO.cc
   missions/nanograms/src/NanoGRAMSQuickLookTreeIO.cc
   ### calibration
   missions/nanograms/src/NanoGRAMSCalibrationData.cc
-  missions/nanograms/src/NanoGRAMSChargeToEnergySpline.cc
   ### data reduction
   missions/nanograms/src/NanoGRAMSTPCDataProcessor.cc
-  missions/nanograms/src/NanoGRAMSLightAnalysis.cc
-  missions/nanograms/src/NanoGRAMSHitCalibrator.cc
+  missions/nanograms/src/NanoGRAMSLightWaveformCorrection.cc
+  missions/nanograms/src/NanoGRAMSFFTConversion.cc
   ### event reconstruction
   missions/nanograms/src/NanoGRAMSEventReconstructionAlgorithm.cc
   missions/nanograms/src/NanoGRAMSEnergyComparisonEventReconstructionAlgorithm.cc
@@ -263,7 +261,9 @@ set(ComptonSoftApplications_Missions_NanoGRAMS_Classes
 set(ComptonSoftApplications_Missions_NanoGRAMS_Modules
   missions/nanograms/src/NanoGRAMSQuickLookWriter.cc
   missions/nanograms/src/NanoGRAMSReadTPCEvents.cc
-  missions/nanograms/src/NanoGRAMSWriteHitTree.cc
+  missions/nanograms/src/NanoGRAMSCorrectLightWaveform.cc
+  missions/nanograms/src/NanoGRAMSAnalyzeLight.cc
+  missions/nanograms/src/NanoGRAMSSelectEvents.cc
 )
 
 target_sources(ComptonSoftApplications
@@ -299,7 +299,7 @@ target_include_directories(ComptonSoftApplications
   charge_transport/include
   radioactivation/include
   missions/astroh/include
-  missons/nanograms/include
+  missions/nanograms/include
 )
 
 target_link_libraries(ComptonSoftApplications

@@ -17,46 +17,46 @@
  *                                                                       *
  *************************************************************************/
 
-#include "NanoGRAMSTPCDataProcessor.hh"
+
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveformCorrection_H
+#define COMPTONSOFT_NanoGRAMSLightWaveformCorrection_H 1
+
+#include <array>
+#include <vector>
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-bool isTPCDataUsable(int error_flags)
+struct PedestalCorrectionResult
 {
-  if ((error_flags==0)||(error_flags==4)) {
-    return true;
-  } else {
-    return false;
-  }
-}
+  double pedestal = 0.0;
+  double stddev = 0.0;
+};
 
-TPCTreeReader::TPCTreeReader(TTree* tpc_tree)
-    : tpc_tree_buffer_(tpc_tree)
+PedestalCorrectionResult correctPedestal(std::vector<double>& waveform,
+                                         double range_min,
+                                         double range_max);
+
+constexpr int kNumInterleavedADCPhases = 4;
+
+struct DigitizerOffsetCorrectionResult
 {
-  if (tpc_tree_buffer_.nEntries() > 0) {
-    // the waveform layout (registered DPP channels) is taken from the first entry
-    tpc_tree_buffer_.getEntry(0);
-    tpc_tree_buffer_.updateWaveformLayoutFromRegisteredChannels();
-  }
-}
+  std::array<double, kNumInterleavedADCPhases> offset{};
+};
 
-TPCTreeReader::~TPCTreeReader() = default;
+DigitizerOffsetCorrectionResult correctDigitizerOffset(std::vector<double>& waveform,
+                                                       int wave_compress,
+                                                       int range_start_index,
+                                                       int range_stop_index);
 
-bool TPCTreeReader::readNextEntry(int64_t& raw_event_id)
-{
-  if (current_entry_ >= tpc_tree_buffer_.nEntries()) {
-    return false;
-  }
-
-  raw_event_id = current_entry_;
-  tpc_tree_buffer_.getEntry(current_entry_);
-  current_unix_time_ = tpc_tree_buffer_.representativeUnixTime();
-  ++current_entry_;
-  return true;
-}
+void applySimpleFFTFilter(std::vector<double>& waveform,
+                          double sampling_interval,
+                          double low_frequency,
+                          double high_frequency);
 
 } /* namespace grams */
 } /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_NanoGRAMSLightWaveformCorrection_H */

@@ -2,8 +2,10 @@
 
 %{
 #include "NanoGRAMSReadTPCEvents.hh"
+#include "NanoGRAMSCorrectLightWaveform.hh"
+#include "NanoGRAMSAnalyzeLight.hh"
+#include "NanoGRAMSSelectEvents.hh"
 #include "NanoGRAMSQuickLookWriter.hh"
-#include "NanoGRAMSWriteHitTree.hh"
 #include "CSHitCollection.hh"
 #include "ConstructDetector.hh"
 #include "ReadHitTree.hh"
@@ -23,11 +25,25 @@ public:
   ~NanoGRAMSReadTPCEvents();
 };
 
-class NanoGRAMSWriteHitTree : public anlnext::BasicModule
+class NanoGRAMSCorrectLightWaveform : public anlnext::BasicModule
 {
 public:
-  NanoGRAMSWriteHitTree();
-  ~NanoGRAMSWriteHitTree();
+  NanoGRAMSCorrectLightWaveform();
+  ~NanoGRAMSCorrectLightWaveform();
+};
+
+class NanoGRAMSAnalyzeLight : public anlnext::BasicModule
+{
+public:
+  NanoGRAMSAnalyzeLight();
+  ~NanoGRAMSAnalyzeLight();
+};
+
+class NanoGRAMSSelectEvents : public anlnext::BasicModule
+{
+public:
+  NanoGRAMSSelectEvents();
+  ~NanoGRAMSSelectEvents();
 };
 
 class NanoGRAMSQuickLookWriter : public anlnext::BasicModule

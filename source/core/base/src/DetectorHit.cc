@@ -52,11 +52,11 @@ DetectorHit& DetectorHit::merge(const DetectorHit& r)
 {
   const double edep0 = EnergyDeposit();
   const double edep1 = r.EnergyDeposit();
-  if (edep0>0.0 && edep1>0.0) {
+  if (edep0 > 0.0 && edep1 > 0.0) {
     const double sumE = edep0 + edep1;
-    setPosition( (Position()*edep0 + r.Position()*edep1)/sumE );
-    setLocalPosition( (LocalPosition()*edep0 + r.LocalPosition()*edep1)/sumE );
-    setRealPosition( (RealPosition()*edep0 + r.RealPosition()*edep1)/sumE );
+    setPosition((Position() * edep0 + r.Position() * edep1) / sumE);
+    setLocalPosition((LocalPosition() * edep0 + r.LocalPosition() * edep1) / sumE);
+    setRealPosition((RealPosition() * edep0 + r.RealPosition() * edep1) / sumE);
   }
   else if (edep1 > 0.0) {
     setPosition(r.Position());
@@ -68,11 +68,12 @@ DetectorHit& DetectorHit::merge(const DetectorHit& r)
     setPositionError(r.PositionError());
     setLocalPositionError(r.LocalPositionError());
   }
-  
-  setEnergyDeposit(EnergyDeposit()+r.EnergyDeposit());
-  setEnergyCharge(EnergyCharge()+r.EnergyCharge());
-  setEnergy(Energy()+r.Energy());
-  setEPI(EPI()+r.EPI());
+
+  setEnergyDeposit(EnergyDeposit() + r.EnergyDeposit());
+  setEnergyCharge(EnergyCharge() + r.EnergyCharge());
+  setEnergy(Energy() + r.Energy());
+  setEPI(EPI() + r.EPI());
+  setEPIForSelection(EPIForSelection() + r.EPIForSelection());
 
   if (RealTime() > r.RealTime()) {
     setRealTime(r.RealTime());
@@ -106,7 +107,7 @@ DetectorHit& DetectorHit::merge(const DetectorHit& r)
 
   addProcess(r.Process());
   addFlags(r.Flags());
-  
+
   return *this;
 }
 
@@ -118,13 +119,12 @@ bool DetectorHit::isAdjacent(const DetectorHit& r, bool contact_condition) const
       const int dy = Voxel().Y() - r.Voxel().Y();
       const int dz = Voxel().Z() - r.Voxel().Z();
       if (contact_condition) {
-        return (dx==0 && dy==0 && (dz==-1 || dz==1))
-          || (dy==0 && dz==0 && (dx==-1 || dx==1))
-          || (dz==0 && dx==0 && (dy==-1 || dy==1));
+        return (dx == 0 && dy == 0 && (dz == -1 || dz == 1)) || (dy == 0 && dz == 0 && (dx == -1 || dx == 1)) ||
+               (dz == 0 && dx == 0 && (dy == -1 || dy == 1));
       }
       else {
-        if (dx!=0 || dy!=0 || dz!=0) {
-          return (-1<=dx && dx<=1) && (-1<=dy && dy<=1) && (-1<=dz && dz<=1);
+        if (dx != 0 || dy != 0 || dz != 0) {
+          return (-1 <= dx && dx <= 1) && (-1 <= dy && dy <= 1) && (-1 <= dz && dz <= 1);
         }
       }
     }
@@ -132,58 +132,57 @@ bool DetectorHit::isAdjacent(const DetectorHit& r, bool contact_condition) const
       const int dx = Pixel().X() - r.Pixel().X();
       const int dy = Pixel().Y() - r.Pixel().Y();
       if (contact_condition) {
-        return (dx==0 && (dy==1 || dy==-1)) || (dy==0 && (dx==1 || dx==-1));
+        return (dx == 0 && (dy == 1 || dy == -1)) || (dy == 0 && (dx == 1 || dx == -1));
       }
       else {
-        if (dx!=0 || dy!=0) {
-          return (-1<=dx && dx<=1) && (-1<=dy && dy<=1);
+        if (dx != 0 || dy != 0) {
+          return (-1 <= dx && dx <= 1) && (-1 <= dy && dy <= 1);
         }
       }
     }
     else if (isXStrip() && r.isXStrip()) {
       const int dx = Pixel().X() - r.Pixel().X();
-      return dx==1 || dx==-1;
+      return dx == 1 || dx == -1;
     }
     else if (isYStrip() && r.isYStrip()) {
       const int dy = Pixel().Y() - r.Pixel().Y();
-      return dy==1 || dy==-1;
+      return dy == 1 || dy == -1;
     }
   }
   return false;
 }
 
-DetectorHit& DetectorHit::mergeAdjacentSignal(const DetectorHit& r,
-                                              MergedPosition mergedPosition,
+DetectorHit& DetectorHit::mergeAdjacentSignal(const DetectorHit& r, MergedPosition mergedPosition,
                                               bool setClusteredFlag)
 {
   const double epi0 = EPI();
   const double epi1 = r.EPI();
- 
-  if (epi0>0.0 && epi1>0.0) {
-    if (mergedPosition==MergedPosition::KeepLeft) {
+
+  if (epi0 > 0.0 && epi1 > 0.0) {
+    if (mergedPosition == MergedPosition::KeepLeft) {
     }
-    else if (mergedPosition==MergedPosition::Midpoint) {
-      setPosition( 0.5*(Position()+r.Position()) );
-      setLocalPosition( 0.5*(LocalPosition()+r.LocalPosition()) );
-      setRealPosition( 0.5*(RealPosition()+r.RealPosition()) );
+    else if (mergedPosition == MergedPosition::Midpoint) {
+      setPosition(0.5 * (Position() + r.Position()));
+      setLocalPosition(0.5 * (LocalPosition() + r.LocalPosition()));
+      setRealPosition(0.5 * (RealPosition() + r.RealPosition()));
       if (epi0 < epi1) {
         setVoxel(r.Voxel());
         setPositionError(r.PositionError());
         setLocalPositionError(r.LocalPositionError());
       }
     }
-    else if (mergedPosition==MergedPosition::EnergyWeighted) {
+    else if (mergedPosition == MergedPosition::EnergyWeighted) {
       const double sumE = epi0 + epi1;
-      setPosition( (Position()*epi0+r.Position()*epi1)/sumE );
-      setLocalPosition( (LocalPosition()*epi0 + r.LocalPosition()*epi1)/sumE );
-      setRealPosition( (RealPosition()*epi0 + r.RealPosition()*epi1)/sumE );
+      setPosition((Position() * epi0 + r.Position() * epi1) / sumE);
+      setLocalPosition((LocalPosition() * epi0 + r.LocalPosition() * epi1) / sumE);
+      setRealPosition((RealPosition() * epi0 + r.RealPosition() * epi1) / sumE);
       if (epi0 < epi1) {
         setVoxel(r.Voxel());
         setPositionError(r.PositionError());
         setLocalPositionError(r.LocalPositionError());
       }
     }
-    else if (mergedPosition==MergedPosition::CopyRight) {
+    else if (mergedPosition == MergedPosition::CopyRight) {
       setPosition(r.Position());
       setLocalPosition(r.LocalPosition());
       setRealPosition(r.RealPosition());
@@ -193,11 +192,13 @@ DetectorHit& DetectorHit::mergeAdjacentSignal(const DetectorHit& r,
     }
   }
 
-  setEnergyDeposit(EnergyDeposit()+r.EnergyDeposit());
-  setEnergyCharge(EnergyCharge()+r.EnergyCharge());
-  setEnergy(Energy()+r.Energy());
-  setPHA(PHA()+r.PHA());
-  setEPI(EPI()+r.EPI());
+  setEnergyDeposit(EnergyDeposit() + r.EnergyDeposit());
+  setEnergyCharge(EnergyCharge() + r.EnergyCharge());
+  setEnergy(Energy() + r.Energy());
+  setPHA(PHA() + r.PHA());
+  setEPI(EPI() + r.EPI());
+  setEPIForSelection(EPIForSelection() + r.EPIForSelection());
+  setChargeCount(ChargeCount() + r.ChargeCount());
   // Photon count is not merged because it is assumed to be common in the detector.
 
   if (RealTime() > r.RealTime()) {

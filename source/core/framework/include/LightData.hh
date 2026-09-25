@@ -44,9 +44,10 @@ private:
 
 private:
   double pedestal_ = 0.0;
+  bool valid_ = true;
 
-  const int n_points_ = 1;
-  const double t_width_ = 0;
+  int n_points_ = 1;
+  double t_width_ = 0;
   double t_start_ = 0;
 
 protected:
@@ -60,8 +61,23 @@ protected:
 public:
   std::vector<double>& Waveform() { return waveform_; }
   const std::vector<double>& Waveform() const { return waveform_; }
+  // waveform as read from the data (before gain correction)
+  std::vector<double>& RawWaveform() { return raw_waveform_; }
+  const std::vector<double>& RawWaveform() const { return raw_waveform_; }
   const std::vector<double>& Time() const { return time_; }
 
+  int NumberOfPoints() const { return n_points_; }
+  double TimeWidth() const { return t_width_; }
+  double TimeStart() const { return t_start_; }
+
+  // false if the channel has no waveform (e.g., not recorded or not used)
+  void setValid(bool v) { valid_ = v; }
+  bool isValid() const { return valid_; }
+  /**
+   * change the number of points, the time width, and the start time.
+   * The waveforms are resized and reset.
+   */
+  void setLayout(int n_points, double t_width, double t_start);
   void resetTimeStart(double t_start);
   void correctGain();
   void setPedestal(double pedestal) { pedestal_ = pedestal; }

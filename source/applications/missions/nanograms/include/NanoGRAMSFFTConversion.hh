@@ -17,46 +17,55 @@
  *                                                                       *
  *************************************************************************/
 
-#include "NanoGRAMSTPCDataProcessor.hh"
+/**
+ * @file NanoGRAMSFFTConversion.hh
+ * @brief FFT/inverse-FFT conversion of a waveform histogram, ported from
+ *        nanograms-analysis (light/core/include/FFTConversion.hh).
+ * @author Shota Arai
+ */
+
+#ifndef COMPTONSOFT_NanoGRAMSFFTConversion_H
+#define COMPTONSOFT_NanoGRAMSFFTConversion_H 1
+
+#include <memory>
+
+#include "TH1D.h"
+#include "TVirtualFFT.h"
 
 namespace comptonsoft
 {
-namespace grams
+namespace grams {
+
+class NanoGRAMSFFTConversion
 {
+public:
+  NanoGRAMSFFTConversion() = default;
+  virtual ~NanoGRAMSFFTConversion();
 
-bool isTPCDataUsable(int error_flags)
-{
-  if ((error_flags==0)||(error_flags==4)) {
-    return true;
-  } else {
-    return false;
-  }
-}
+  TH1D* GetHist() const { return hist_; }
+  std::shared_ptr<TH1D> GetHistFFT() const;
+  std::shared_ptr<TH1D> GetHistBack();
+  std::shared_ptr<TVirtualFFT> GetFFT() { return fft_; }
+  std::shared_ptr<TVirtualFFT> GetFFTInverse() { return fftInverse_; }
 
-TPCTreeReader::TPCTreeReader(TTree* tpc_tree)
-    : tpc_tree_buffer_(tpc_tree)
-{
-  if (tpc_tree_buffer_.nEntries() > 0) {
-    // the waveform layout (registered DPP channels) is taken from the first entry
-    tpc_tree_buffer_.getEntry(0);
-    tpc_tree_buffer_.updateWaveformLayoutFromRegisteredChannels();
-  }
-}
+  void SetHist(TH1D* hist);
+  void ExecFFT();
+  void ExecFFTInverse();
+  double GetFrequency(double xPosition) const;
+  double GetRangeX() const { return rangeX_; }
 
-TPCTreeReader::~TPCTreeReader() = default;
-
-bool TPCTreeReader::readNextEntry(int64_t& raw_event_id)
-{
-  if (current_entry_ >= tpc_tree_buffer_.nEntries()) {
-    return false;
-  }
-
-  raw_event_id = current_entry_;
-  tpc_tree_buffer_.getEntry(current_entry_);
-  current_unix_time_ = tpc_tree_buffer_.representativeUnixTime();
-  ++current_entry_;
-  return true;
-}
+private:
+  TH1D* hist_ = nullptr;
+  bool calcHistBack_ = false;
+  std::shared_ptr<TH1D> histFFT_ = nullptr;
+  std::shared_ptr<TH1D> histBack_ = nullptr;
+  std::shared_ptr<TVirtualFFT> fft_ = nullptr;
+  std::shared_ptr<TVirtualFFT> fftInverse_ = nullptr;
+  double rangeX_ = 0;
+  bool FFTExecuted_ = false;
+};
 
 } /* namespace grams */
 } /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_NanoGRAMSFFTConversion_H */

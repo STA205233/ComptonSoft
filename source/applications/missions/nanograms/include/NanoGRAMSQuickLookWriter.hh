@@ -23,10 +23,21 @@ namespace comptonsoft
 {
 
 class NanoGRAMSReadTPCEvents;
+class RealDetectorUnitNanoGRAMS;
 
+/**
+ * Writes the quicklook tree of the NanoGRAMS detector unit.
+ * The event type is classified with the flags of the detector unit and the criteria of NanoGRAMSSelectEvents:
+ *   Other (excluded core) > Gamma (a cluster survives the selection) > Cosmic > PileUp > TimeUp > Other.
+ * Error events are not written since they are skipped by NanoGRAMSReadTPCEvents.
+ *
+ * This module should be placed after SelectHits and before NanoGRAMSSelectEvents
+ * to write the events that are rejected by the selection.
+ * @date 2026-09-24 | rewritten to take the data from RealDetectorUnitNanoGRAMS
+ */
 class NanoGRAMSQuickLookWriter : public VCSModule
 {
-  DEFINE_ANL_MODULE(NanoGRAMSQuickLookWriter, 1.0);
+  DEFINE_ANL_MODULE(NanoGRAMSQuickLookWriter, 2.0);
 
 public:
   NanoGRAMSQuickLookWriter();
@@ -38,7 +49,9 @@ public:
   anlnext::ANLStatus mod_end_run() override;
 
 private:
-  bool shouldWrite() const;
+  std::vector<int> selectedClusters() const;
+  grams::TPCEventType classifyEvent(const std::vector<int>& selected_clusters) const;
+  bool shouldWrite(grams::TPCEventType event_type, const std::vector<int>& selected_clusters) const;
 
   std::string quicklook_file_ = "quicklook.root";
   std::vector<std::string> event_types_;
@@ -47,6 +60,7 @@ private:
   int output_flush_entries_ = 1000;
 
   const NanoGRAMSReadTPCEvents* tpc_events_ = nullptr;
+  RealDetectorUnitNanoGRAMS* detector_ = nullptr;
   std::unique_ptr<grams::QuickLookTreeOutputWriter> writer_;
 };
 

@@ -17,46 +17,51 @@
  *                                                                       *
  *************************************************************************/
 
-#include "NanoGRAMSTPCDataProcessor.hh"
+
+#ifndef COMPTONSOFT_NanoGRAMSFFTFilterImpl_H
+#define COMPTONSOFT_NanoGRAMSFFTFilterImpl_H 1
+
+#include "NanoGRAMSFFTConversion.hh"
+#include "NanoGRAMSVLightWaveformFilter.hh"
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-bool isTPCDataUsable(int error_flags)
+template <typename ParamType>
+class FFTFilterImpl: public VLightWaveformFilter
 {
-  if ((error_flags==0)||(error_flags==4)) {
-    return true;
-  } else {
-    return false;
-  }
-}
+public:
+  FFTFilterImpl() = default;
+  virtual ~FFTFilterImpl() = default;
+  FFTFilterImpl(const FFTFilterImpl& r)
+    : VLightWaveformFilter(r), fftConversion_(nullptr), param_(r.param_) {}
 
-TPCTreeReader::TPCTreeReader(TTree* tpc_tree)
-    : tpc_tree_buffer_(tpc_tree)
+  std::shared_ptr<TH1D> Exec(std::shared_ptr<TH1D> signal_hist) override;
+  void SetParam(const ParamType& param) { param_ = param; }
+
+private:
+  void ApplyFilter();
+
+  std::unique_ptr<NanoGRAMSFFTConversion> fftConversion_ = nullptr;
+  ParamType param_;
+};
+
+template <typename ParamType>
+std::shared_ptr<TH1D> FFTFilterImpl<ParamType>::Exec(std::shared_ptr<TH1D> signal_hist)
 {
-  if (tpc_tree_buffer_.nEntries() > 0) {
-    // the waveform layout (registered DPP channels) is taken from the first entry
-    tpc_tree_buffer_.getEntry(0);
-    tpc_tree_buffer_.updateWaveformLayoutFromRegisteredChannels();
+  if (!fftConversion_) {
+    fftConversion_ = std::make_unique<NanoGRAMSFFTConversion>();
   }
-}
-
-TPCTreeReader::~TPCTreeReader() = default;
-
-bool TPCTreeReader::readNextEntry(int64_t& raw_event_id)
-{
-  if (current_entry_ >= tpc_tree_buffer_.nEntries()) {
-    return false;
-  }
-
-  raw_event_id = current_entry_;
-  tpc_tree_buffer_.getEntry(current_entry_);
-  current_unix_time_ = tpc_tree_buffer_.representativeUnixTime();
-  ++current_entry_;
-  return true;
+  fftConversion_->SetHist(signal_hist.get());
+  fftConversion_->ExecFFT();
+  ApplyFilter();
+  fftConversion_->ExecFFTInverse();
+  return fftConversion_->GetHistBack();
 }
 
 } /* namespace grams */
 } /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_NanoGRAMSFFTFilterImpl_H */

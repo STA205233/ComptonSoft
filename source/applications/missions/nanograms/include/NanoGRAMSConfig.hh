@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "AstroUnits.hh"
-#include "NanoGRAMSEvent.hh"
+#include "NanoGRAMSConstants.hh"
 
 namespace comptonsoft
 {
@@ -40,6 +40,20 @@ enum class LightEventSelectionMode
   Disabled,
   GammaRequired,
   VetoOnly,
+};
+
+// how the pedestal of the light waveform is estimated
+enum class LightPedestalMethod
+{
+  ValueRange, // mean of the samples whose values are in [pedestal_range_min, pedestal_range_max] (ADC)
+  TimeWindow, // mean of the samples in the time window pedestal_time_window (time = 0 at the trigger)
+};
+
+// how the waveforms of the channels in an analysis group are combined
+enum class LightAnalysisMethod
+{
+  Average,     // the waveforms are averaged sample by sample, then analyzed
+  EachChannel, // each waveform is analyzed, and the maximum over the channels is taken
 };
 
 struct Config
@@ -67,9 +81,27 @@ struct Config
   std::vector<int> general_analysis_channels = {4, 6, 5, 7};
   std::vector<int> pileup_analysis_channels  = {4};
   std::array<int, NUM_CH_DPP_MAX> light_delay_counts{};
-  std::string light_waveform_analysis = "average";
+  LightAnalysisMethod light_analysis_method = LightAnalysisMethod::Average;
   LightEventSelectionMode light_event_selection_mode = LightEventSelectionMode::GammaRequired;
   bool use_light_for_event_selection = true;
+
+  // light waveform corrections (NanoGRAMSCorrectLightWaveform)
+  // pedestal: estimated by light_pedestal_method and subtracted
+  bool light_pedestal_correction = false;
+  LightPedestalMethod light_pedestal_method = LightPedestalMethod::ValueRange;
+  double light_pedestal_range_min = -100.0; // ValueRange (in ADC)
+  double light_pedestal_range_max = 0.0;    // ValueRange (in ADC)
+  double light_pedestal_time_window_start = 0.0; // TimeWindow (time = 0 at the trigger)
+  double light_pedestal_time_window_stop = 0.0;  // TimeWindow
+  // digitizer offset of the interleaved ADC phases, estimated in the sample index range [start, stop)
+  bool light_digitizer_offset_correction = false;
+  int light_digitizer_offset_range_start_index = 0;
+  int light_digitizer_offset_range_stop_index = 0;
+  // FFT band-pass filter; frequencies in GHz (1/ns)
+  bool light_fft_filter = false;
+  double light_fft_low_frequency = 0.0;
+  double light_fft_high_frequency = 0.0;
+
   std::map<int, std::vector<int>> core_exclude_pix;
 };
 

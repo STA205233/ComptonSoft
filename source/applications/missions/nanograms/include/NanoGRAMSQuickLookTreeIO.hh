@@ -17,11 +17,6 @@
  *                                                                       *
  *************************************************************************/
 
-/**
- * @file NanoGRAMSQuickLookTreeIO.hh
- * @brief Output writer for NanoGRAMS tpcquicklook trees.
- */
-
 #ifndef COMPTONSOFT_NanoGRAMSQuickLookTreeIO_H
 #define COMPTONSOFT_NanoGRAMSQuickLookTreeIO_H 1
 
@@ -32,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "NanoGRAMSTPCDataProcessor.hh"
+#include "NanoGRAMSConstants.hh"
 
 class TFile;
 class TTree;
@@ -40,39 +35,61 @@ class TTree;
 namespace comptonsoft
 {
 
-class TPCProperty;
+class RealDetectorUnitNanoGRAMS;
 
 namespace grams
 {
 
+enum class TPCEventType : int16_t
+{
+  Error  = -1,
+  Other  = 0,
+  Gamma  = 1,
+  Cosmic = 2,
+  PileUp = 3,
+  TimeUp = 4,
+};
+
+/**
+ * Writer of the NanoGRAMS quicklook tree, taking the data from the detector unit.
+ * - adu_cmn_sub, cmn: raw ADC and the common mode noise (median) of the MCDs
+ * - energy_cmn_sub: EPI of the MCDs (charge x W_ion) [keV]
+ * - ti, drift_time: raw counters of the DAQ
+ * - waveform: corrected light waveforms (LightData::Waveform) of the valid channels [mV]
+ * - light_integrated_charge: light charge integrated in ROI of each DPP channel [C]
+ *   (RealDetectorUnitNanoGRAMS::LightIntegratedCharge of the general and pileup analysis channels;
+ *    0 for the other channels)
+ * - hit_*: pixels of the selected clusters (reconstructed hits)
+ * @date 2026-09-24 | rewritten to take the data from RealDetectorUnitNanoGRAMS
+ */
 class QuickLookTreeOutputWriter
 {
 public:
-  explicit QuickLookTreeOutputWriter(const std::string& output_file_path,
-                                     const TPCTreeBuffer& first_tpc_tree_buffer,
-                                     const TPCProperty& tpc_property,
-                                     bool save_waveforms = true,
-                                     int flush_entries = 1000);
+  QuickLookTreeOutputWriter(const std::string& output_file_path,
+                            const RealDetectorUnitNanoGRAMS& detector,
+                            bool save_waveforms = true,
+                            int flush_entries = 1000);
   ~QuickLookTreeOutputWriter();
 
+  /**
+   * @param selected_clusters indices of the reconstructed hits to be written in hit_* branches
+   */
   void fillEvent(int64_t raw_event_id,
                  TPCEventType event_type,
-                 const TPCTreeBuffer& tpc_tree_buffer,
-                 const std::vector<RawFECHit>& hits);
+                 RealDetectorUnitNanoGRAMS& detector,
+                 const std::vector<int>& selected_clusters);
   std::string close();
 
 private:
   void bindBranches();
   void flush();
-  void fillChargeMaps(TPCEventType event_type,
-                      const TPCTreeBuffer& tpc_tree_buffer);
-  void fillRegisteredWaveforms(const TPCTreeBuffer& tpc_tree_buffer);
-  double quicklookEnergy(int fec, int ch, double adu_cmn_sub) const;
+  void fillChargeMaps(const RealDetectorUnitNanoGRAMS& detector);
+  void fillWaveforms(const RealDetectorUnitNanoGRAMS& detector);
+  static std::vector<int16_t> validLightChannels(const RealDetectorUnitNanoGRAMS& detector);
 
   std::filesystem::path  output_path_;
   std::unique_ptr<TFile> file_;
   std::unique_ptr<TTree> quicklook_tree_;
-  const TPCProperty& tpc_property_;
   bool save_waveforms_ = true;
   int flush_entries_ = 1000;
   int waveform_len_ = 0;
@@ -83,7 +100,7 @@ private:
   std::string ti_leaflist_;
   std::string drift_leaflist_;
   std::string wave_compress_leaflist_;
-  std::string registered_leaflist_;
+  std::string light_integrated_charge_leaflist_;
   std::string waveform_dpp_ch_leaflist_;
   std::string waveform_leaflist_;
 
@@ -98,9 +115,9 @@ private:
   std::array<uint32_t, NUM_VATA> ti_{};
   std::array<uint32_t, NUM_VATA> drift_time_{};
   std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress_{};
-  std::array<bool, NUM_CH_DPP_MAX> registered_{};
+  std::array<double, NUM_CH_DPP_MAX> light_integrated_charge_{};
   std::vector<int16_t> waveform_dpp_ch_;
-  std::vector<int16_t> waveform_;
+  std::vector<float> waveform_;
   std::vector<int16_t> hit_pixel_fec_;
   std::vector<int16_t> hit_pixel_ch_;
   std::vector<float> hit_pixel_adu_;

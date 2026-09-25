@@ -110,6 +110,10 @@ void ConstructChannelMap::loadChannelMap(const boost::property_tree::ptree& pt)
 
   DetectorSystem* detectorManager = getDetectorManager();
   for (auto& detector: detectorManager->getDetectors()) {
+    if (detector->getChannelMap()) {
+      // already given by the detector system (e.g., a fixed channel map)
+      continue;
+    }
     const std::string prefix = detector->getNamePrefix();
     if (channel_maps_.count(prefix) == 0) {
       std::ostringstream message;

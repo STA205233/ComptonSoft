@@ -11,7 +11,15 @@
 
 #include "NanoGRAMSQuickLookWriter.hh"
 
+#include <cmath>
+#include <stdexcept>
+
+#include "DetectorHit.hh"
+#include "FlagDefinition.hh"
+#include "NanoGRAMSConfig.hh"
 #include "NanoGRAMSReadTPCEvents.hh"
+#include "NanoGRAMSSelectEvents.hh"
+#include "RealDetectorUnitNanoGRAMS.hh"
 
 using namespace anlnext;
 
@@ -57,27 +65,36 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_initialize()
     return AS_QUIT_ERROR;
   }
   get_module("NanoGRAMSReadTPCEvents", &tpc_events_);
+
+  for (auto& detector : getDetectorManager()->getDetectors()) {
+    if (detector->checkType(DetectorType::NanoGRAMS)) {
+      // always RealDetectorUnitNanoGRAMS
+      detector_ = static_cast<RealDetectorUnitNanoGRAMS*>(detector.get());
+      break;
+    }
+  }
+  if (detector_ == nullptr) {
+    throw std::runtime_error("NanoGRAMSQuickLookWriter: no NanoGRAMS detector is found.");
+  }
   return AS_OK;
 }
 
 ANLStatus NanoGRAMSQuickLookWriter::mod_analyze()
 {
-  if (!shouldWrite()) {
+  const std::vector<int> selected_clusters = selectedClusters();
+  const grams::TPCEventType event_type = classifyEvent(selected_clusters);
+  if (!shouldWrite(event_type, selected_clusters)) {
     return AS_OK;
   }
 
   if (!writer_) {
     writer_ = std::make_unique<grams::QuickLookTreeOutputWriter>(
         quicklook_file_,
-        tpc_events_->currentTPCBuffer(),
-        tpc_events_->tpcProperty(),
+        *detector_,
         save_waveforms_,
         output_flush_entries_);
   }
-  writer_->fillEvent(tpc_events_->currentRawEventId(),
-                     tpc_events_->currentEventType(),
-                     tpc_events_->currentTPCBuffer(),
-                     tpc_events_->currentEventHits());
+  writer_->fillEvent(tpc_events_->currentRawEventId(), event_type, *detector_, selected_clusters);
   return AS_OK;
 }
 
@@ -89,17 +106,65 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_end_run()
   return AS_OK;
 }
 
-bool NanoGRAMSQuickLookWriter::shouldWrite() const
+std::vector<int> NanoGRAMSQuickLookWriter::selectedClusters() const
 {
-  const auto& hits = tpc_events_->currentEventHits();
-  if (num_hits_ >= 0 && static_cast<int>(hits.size()) != num_hits_) {
+  std::vector<int> selected;
+  if (NanoGRAMSSelectEvents::isDetectorRejected(*detector_, tpc_events_->config().light_event_selection_mode)) {
+    return selected;
+  }
+  for (int i = 0; i < detector_->NumberOfReconstructedHits(); ++i) {
+    if (!NanoGRAMSSelectEvents::isClusterRejected(*detector_->getReconstructedHit(i))) {
+      selected.push_back(i);
+    }
+  }
+  return selected;
+}
+
+grams::TPCEventType NanoGRAMSQuickLookWriter::classifyEvent(const std::vector<int>& selected_clusters) const
+{
+  if (detector_->isEventFlags(nanograms_event_flag::ExcludedCore)) {
+    return grams::TPCEventType::Other;
+  }
+  if (!selected_clusters.empty()) {
+    return grams::TPCEventType::Gamma;
+  }
+
+  const bool usesLight =
+      (tpc_events_->config().light_event_selection_mode != grams::LightEventSelectionMode::Disabled);
+  if (usesLight && detector_->isEventFlags(nanograms_event_flag::LightCosmic)) {
+    return grams::TPCEventType::Cosmic;
+  }
+  if (usesLight && detector_->isEventFlags(nanograms_event_flag::LightPileup)) {
+    return grams::TPCEventType::PileUp;
+  }
+
+  // time up: the drift times of all the FECs are over the limit (or not available)
+  bool timeUp = true;
+  for (int fec = 0; fec < detector_->NumberOfMultiChannelData(); ++fec) {
+    const double driftTime = detector_->DriftTime(fec);
+    if (std::isfinite(driftTime) && driftTime < detector_->DriftTimeLimit()) {
+      timeUp = false;
+      break;
+    }
+  }
+  if (timeUp) {
+    return grams::TPCEventType::TimeUp;
+  }
+  return grams::TPCEventType::Other;
+}
+
+// selection of the events to be written, by the module parameters event_types and num_hits
+bool NanoGRAMSQuickLookWriter::shouldWrite(grams::TPCEventType event_type,
+                                           const std::vector<int>& selected_clusters) const
+{
+  if (num_hits_ >= 0 && static_cast<int>(selected_clusters.size()) != num_hits_) {
     return false;
   }
   if (event_types_.empty()) {
     return true;
   }
   for (const std::string& name : event_types_) {
-    if (matchesEventType(name, tpc_events_->currentEventType())) {
+    if (matchesEventType(name, event_type)) {
       return true;
     }
   }

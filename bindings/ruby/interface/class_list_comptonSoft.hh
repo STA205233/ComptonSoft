@@ -134,5 +134,8 @@ class WriteHXIEventFITS;
 class FilterByGoodTimeIntervalsForSGD;
 class FilterByGoodTimeIntervalsForHXI;
 class NanoGRAMSReadTPCEvents;
-class NanoGRAMSWriteHitTree;
+class NanoGRAMSCorrectLightWaveform;
+class NanoGRAMSAnalyzeLight;
+class NanoGRAMSSelectEvents;
+class NanoGRAMSQuickLookWriter;
 }

@@ -21,6 +21,10 @@ set(ComptonSoftCore_Framework_Classes
   framework/src/GainFunctionSpline.cc
   framework/src/GainFunctionTF1.cc
   framework/src/MultiChannelData.cc
+  framework/src/NanoGRAMSMultiChannelData.cc
+  framework/src/NanoGRAMSChargeToEnergySpline.cc
+  framework/src/NanoGRAMSTemperatureCorrection.cc
+  framework/src/NanoGRAMSChannelMap.cc
   framework/src/VChannelMap.cc
   framework/src/ChannelMap.cc
   framework/src/ChannelMapDSD.cc
@@ -197,6 +201,8 @@ target_link_libraries(ComptonSoftCore
   ${HEALPIX_LIB}
   ${ANLNEXT_LIB}
   ${ANLG4_LIB}
+  ${HDF5_LIB}
+  ${YAMLCPP_LIB}
 )
 
 install(TARGETS ComptonSoftCore

@@ -74,10 +74,10 @@ public:
   bool getUseNegativePulse() const
   { return useNegativePulse_; }
 
-  void resetThresholdEnergyVector(double val)
+  virtual void resetThresholdEnergyVector(double val)
   { std::fill(thresholdEnergyVector_.begin(), thresholdEnergyVector_.end(), val); }
-  void setThresholdEnergy(std::size_t i, double val) { thresholdEnergyVector_[i] = val; }
-  void setThresholdEnergyVector(const std::vector<double>& v) { thresholdEnergyVector_ = v; }
+  virtual void setThresholdEnergy(std::size_t i, double val) { thresholdEnergyVector_[i] = val; }
+  virtual void setThresholdEnergyVector(const std::vector<double>& v) { thresholdEnergyVector_ = v; }
   double getThresholdEnergy(std::size_t i) const { return thresholdEnergyVector_[i]; }
   void getThresholdEnergyVector(std::vector<double>& v) const
   {
@@ -213,7 +213,7 @@ public:
    * reference) in this object.
    * This method does not reset the data valid array.
    */
-  void resetEventData()
+  virtual void resetEventData()
   {
     time_ = 0.0;
     flags_ = 0u;
@@ -246,7 +246,7 @@ public:
    * The calculated value is also set to _CommonModeNoise.
    * @return common mode noise.
    */
-  double calculateCommonModeNoiseByMedian();
+  virtual double calculateCommonModeNoiseByMedian();
 
   /**
    * calcualte common mode noise from the PHA array by the mean method.
@@ -259,13 +259,19 @@ public:
    * subtract common mode noise on the PHA array.
    */
   void subtractCommonModeNoise();
- 
+
+  /**
+   * detector-specific correction on the PHA array (e.g., gain drift),
+   * applied after the common mode noise subtraction. Nothing is done by default.
+   */
+  virtual void correctPHA() {}
+
   /**
    * convert PHA values to EPI values according to a calibaration curve for all
    * channels.
    * @return true if successful
    */
-  bool convertPHA2EPI();
+  virtual bool convertPHA2EPI();
 
   /**
    * convert a pha value to a pi value according to a calibaration curve.
@@ -273,14 +279,14 @@ public:
    * @param pha PHA value
    * @return EPI value
    */
-  double PHA2EPI(std::size_t i, double pha) const;
+  virtual double PHA2EPI(std::size_t i, double pha) const;
 
   /**
    * select detector readout channels that have higher EPI values than the
    * threshold energy.
    * The results can be accessed via @link getHitChannel(int) @endlink.
    */
-  void selectHits();
+  virtual void selectHits();
 
   bool discriminate(std::size_t i, double energy) const;
 

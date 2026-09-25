@@ -196,7 +196,10 @@
 #include "FilterByGoodTimeIntervalsForHXI.hh"
 #endif
 #include "NanoGRAMSReadTPCEvents.hh"
-#include "NanoGRAMSWriteHitTree.hh"
+#include "NanoGRAMSCorrectLightWaveform.hh"
+#include "NanoGRAMSAnalyzeLight.hh"
+#include "NanoGRAMSSelectEvents.hh"
+#include "NanoGRAMSQuickLookWriter.hh"
 
 #include "class_list_anlGeant4.hh"
 #include "comptonsoft_basic_classes.hh"
@@ -1361,12 +1364,32 @@ public:
   ~NanoGRAMSReadTPCEvents() override;
 };
 
-class NanoGRAMSWriteHitTree : public VCSModule
+class NanoGRAMSCorrectLightWaveform : public VCSModule
 {
-
 public:
-  NanoGRAMSWriteHitTree();
-  ~NanoGRAMSWriteHitTree() override;
+  NanoGRAMSCorrectLightWaveform();
+  ~NanoGRAMSCorrectLightWaveform() override;
+};
+
+class NanoGRAMSAnalyzeLight : public VCSModule
+{
+public:
+  NanoGRAMSAnalyzeLight();
+  ~NanoGRAMSAnalyzeLight() override;
+};
+
+class NanoGRAMSSelectEvents : public VCSModule
+{
+public:
+  NanoGRAMSSelectEvents();
+  ~NanoGRAMSSelectEvents() override;
+};
+
+class NanoGRAMSQuickLookWriter : public VCSModule
+{
+public:
+  NanoGRAMSQuickLookWriter();
+  ~NanoGRAMSQuickLookWriter() override;
 };
 
 }

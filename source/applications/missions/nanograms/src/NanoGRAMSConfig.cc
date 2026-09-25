@@ -20,7 +20,6 @@
 #include "NanoGRAMSConfig.hh"
 
 #include "NanoGRAMSFECGeometry.hh"
-#include "NanoGRAMSLightAnalysis.hh"
 
 #include <algorithm>
 #include <filesystem>
@@ -62,6 +61,54 @@ LightEventSelectionMode parseLightEventSelectionMode(const std::string& mode)
 
   throw std::runtime_error(
       "light.event_selection_mode must be gamma_required, veto_only, or disabled.");
+}
+
+LightAnalysisMethod parseLightAnalysisMethod(const std::string& method)
+{
+  if (method == "average") {
+    return LightAnalysisMethod::Average;
+  }
+  if (method == "each_channel") {
+    return LightAnalysisMethod::EachChannel;
+  }
+
+  throw std::runtime_error("light.waveform_analysis must be average or each_channel.");
+}
+
+LightPedestalMethod parseLightPedestalMethod(const std::string& method)
+{
+  if (method == "value_range") {
+    return LightPedestalMethod::ValueRange;
+  }
+  if (method == "time_window") {
+    return LightPedestalMethod::TimeWindow;
+  }
+
+  throw std::runtime_error("light.pedestal_method must be value_range or time_window.");
+}
+
+std::string lightPedestalMethodName(LightPedestalMethod method)
+{
+  if (method == LightPedestalMethod::ValueRange) {
+    return "value_range";
+  }
+  if (method == LightPedestalMethod::TimeWindow) {
+    return "time_window";
+  }
+
+  return "unknown";
+}
+
+std::string lightAnalysisMethodName(LightAnalysisMethod method)
+{
+  if (method == LightAnalysisMethod::Average) {
+    return "average";
+  }
+  if (method == LightAnalysisMethod::EachChannel) {
+    return "each_channel";
+  }
+
+  return "unknown";
 }
 
 std::string lightEventSelectionModeName(LightEventSelectionMode mode)
@@ -207,7 +254,7 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
       readDPPChannelList(nodeLight["pileup_analysis_channels"],
                          "light.pileup_analysis_channels");
   if (nodeLight["waveform_analysis"]) {
-    cfg.light_waveform_analysis = normalizeLightWaveformAnalysis(
+    cfg.light_analysis_method = parseLightAnalysisMethod(
         nodeLight["waveform_analysis"].as<std::string>());
   }
   if (nodeLight["use_for_event_selection"]) {
@@ -239,7 +286,7 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
             << cfg.light_transimpedance_feedback_resistance_ohm / unit::ohm<< std::endl;
   std::cout << "output_impedance_ohm: "
             << cfg.light_output_impedance_ohm / unit::ohm<< std::endl;
-  std::cout << "waveform_analysis:   " << cfg.light_waveform_analysis << std::endl;
+  std::cout << "waveform_analysis:   " << lightAnalysisMethodName(cfg.light_analysis_method) << std::endl;
   std::cout << "event_selection_mode: "
             << lightEventSelectionModeName(cfg.light_event_selection_mode) << std::endl;
   std::cout << "use_for_event_selection: "
@@ -248,6 +295,66 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
                       cfg.general_analysis_channels);
   printDPPChannelList("pileup_analysis_channels",
                       cfg.pileup_analysis_channels);
+
+  if (nodeLight["pedestal_correction"]) {
+    cfg.light_pedestal_correction = nodeLight["pedestal_correction"].as<bool>();
+  }
+  if (nodeLight["pedestal_range_min"]) {
+    cfg.light_pedestal_range_min = nodeLight["pedestal_range_min"].as<double>();
+  }
+  if (nodeLight["pedestal_range_max"]) {
+    cfg.light_pedestal_range_max = nodeLight["pedestal_range_max"].as<double>();
+  }
+  if (nodeLight["pedestal_method"]) {
+    cfg.light_pedestal_method = parseLightPedestalMethod(nodeLight["pedestal_method"].as<std::string>());
+  }
+  if (nodeLight["pedestal_time_window_us"]) {
+    const auto window = nodeLight["pedestal_time_window_us"].as<std::vector<double>>();
+    if (window.size() != 2 || !(window[0] < window[1])) {
+      throw std::runtime_error("light.pedestal_time_window_us must be [start, stop] with start < stop.");
+    }
+    cfg.light_pedestal_time_window_start = window[0] * unit::us;
+    cfg.light_pedestal_time_window_stop = window[1] * unit::us;
+  }
+  if (cfg.light_pedestal_correction && cfg.light_pedestal_method == LightPedestalMethod::TimeWindow &&
+      !(cfg.light_pedestal_time_window_start < cfg.light_pedestal_time_window_stop)) {
+    throw std::runtime_error("light.pedestal_time_window_us is required for light.pedestal_method = time_window.");
+  }
+
+  if (nodeLight["digitizer_offset_correction"]) {
+    cfg.light_digitizer_offset_correction = nodeLight["digitizer_offset_correction"].as<bool>();
+  }
+  if (nodeLight["digitizer_offset_range_start_index"]) {
+    cfg.light_digitizer_offset_range_start_index =
+        nodeLight["digitizer_offset_range_start_index"].as<int>();
+  }
+  if (nodeLight["digitizer_offset_range_stop_index"]) {
+    cfg.light_digitizer_offset_range_stop_index =
+        nodeLight["digitizer_offset_range_stop_index"].as<int>();
+  }
+
+  if (nodeLight["fft_filter"]) {
+    cfg.light_fft_filter = nodeLight["fft_filter"].as<bool>();
+  }
+  if (nodeLight["fft_low_frequency"]) {
+    cfg.light_fft_low_frequency = nodeLight["fft_low_frequency"].as<double>();
+  }
+  if (nodeLight["fft_high_frequency"]) {
+    cfg.light_fft_high_frequency = nodeLight["fft_high_frequency"].as<double>();
+  }
+
+  std::cout << "pedestal_correction: " << cfg.light_pedestal_correction << std::endl;
+  std::cout << "pedestal_method: " << lightPedestalMethodName(cfg.light_pedestal_method) << std::endl;
+  std::cout << "pedestal_range_min: " << cfg.light_pedestal_range_min << std::endl;
+  std::cout << "pedestal_range_max: " << cfg.light_pedestal_range_max << std::endl;
+  std::cout << "pedestal_time_window_us: [ " << cfg.light_pedestal_time_window_start / unit::us << ", "
+            << cfg.light_pedestal_time_window_stop / unit::us << " ]" << std::endl;
+  std::cout << "digitizer_offset_correction: " << cfg.light_digitizer_offset_correction << std::endl;
+  std::cout << "digitizer_offset_range_start_index: " << cfg.light_digitizer_offset_range_start_index << std::endl;
+  std::cout << "digitizer_offset_range_stop_index: " << cfg.light_digitizer_offset_range_stop_index << std::endl;
+  std::cout << "fft_filter: " << cfg.light_fft_filter << std::endl;
+  std::cout << "fft_low_frequency: " << cfg.light_fft_low_frequency << std::endl;
+  std::cout << "fft_high_frequency: " << cfg.light_fft_high_frequency << std::endl;
 }
 
 void readChargeConfig(Config& cfg, const YAML::Node& node)

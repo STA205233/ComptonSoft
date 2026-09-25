@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<?xml-stylesheet type="text/xsl" href="https://raw.githubusercontent.com/odakahirokazu/ComptonSoft/master/xmlstyle/detector_parameters_v3.xsl" ?>
+
+<!--
+  Reconstruction parameters of the NanoGRAMS detector unit for real data.
+  - clustering_range: pixels within this range (in pixel pitch, including diagonals) are merged.
+    It must be given here (the default of VRealDetectorUnit is 2).
+  - the clustering thresholds are overwritten by the pipeline yaml (charge.noise_th_kev / spread_thr_kev).
+  - recombination_correction="4": charge-to-energy spline of the recombination model (the electric field is given
+    by the calibration section of the pipeline yaml).
+-->
+<detector_parameters>
+  <name>NanoGRAMS LArTPC</name>
+  <comment>2026-09-24 | NanoGRAMS pipeline on RealDetectorUnitNanoGRAMS</comment>
+  <data>
+    <detector_set prefix="NanoGRAMS" type="NanoGRAMS">
+      <common>
+        <parameters>
+          <reconstruction mode="4" clustering_range="1" w_ion="23.6" recombination_correction="4" />
+        </parameters>
+      </common>
+    </detector_set>
+  </data>
+</detector_parameters>

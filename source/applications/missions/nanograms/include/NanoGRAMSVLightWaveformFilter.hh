@@ -17,52 +17,28 @@
  *                                                                       *
  *************************************************************************/
 
-#ifndef COMPTONSOFT_NanoGRAMSWriteHitTree_H
-#define COMPTONSOFT_NanoGRAMSWriteHitTree_H 1
 
-#include <cstdint>
+#ifndef COMPTONSOFT_NanoGRAMSLightWaveformFilter_H
+#define COMPTONSOFT_NanoGRAMSLightWaveformFilter_H 1
+
 #include <memory>
-#include <string>
 
-#include "NanoGRAMSCalibrationData.hh"
-#include "VCSModule.hh"
-
-class TFile;
-class TTree;
+#include "TH1.h"
 
 namespace comptonsoft
 {
-
-class HitTreeIOWithInitialInfo;
-class NanoGRAMSReadTPCEvents;
-
-class NanoGRAMSWriteHitTree : public VCSModule
+namespace grams
 {
-  DEFINE_ANL_MODULE(NanoGRAMSWriteHitTree, 1.0);
 
+class VLightWaveformFilter
+{
 public:
-  NanoGRAMSWriteHitTree();
-  ~NanoGRAMSWriteHitTree() override;
-
-  anlnext::ANLStatus mod_define() override;
-  anlnext::ANLStatus mod_initialize() override;
-  anlnext::ANLStatus mod_analyze() override;
-  anlnext::ANLStatus mod_end_run() override;
-
-private:
-  void flushOutput();
-
-  std::string hittree_file_;
-  int output_flush_entries_ = 1000;
-
-  const NanoGRAMSReadTPCEvents* tpc_events_ = nullptr;
-  std::unique_ptr<TFile> output_file_;
-  TTree* hit_tree_ = nullptr;
-  std::unique_ptr<HitTreeIOWithInitialInfo> tree_io_;
-  CalibrationConfig calibration_config_;
-  int64_t written_events_ = 0;
+  VLightWaveformFilter() = default;
+  virtual ~VLightWaveformFilter() = default;
+  virtual std::shared_ptr<TH1D> Exec(std::shared_ptr<TH1D> signal_hist) = 0;
 };
 
+} /* namespace grams */
 } /* namespace comptonsoft */
 
-#endif /* COMPTONSOFT_NanoGRAMSWriteHitTree_H */
+#endif /* COMPTONSOFT_NanoGRAMSLightWaveformFilter_H */

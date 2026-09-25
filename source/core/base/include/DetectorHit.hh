@@ -33,9 +33,9 @@
 
 #include "CSTypes.hh"
 #include "ChannelID.hh"
-#include "VoxelID.hh"
-#include "PixelID.hh"
 #include "FlagDefinition.hh"
+#include "PixelID.hh"
+#include "VoxelID.hh"
 
 class G4MaterialCutsCouple;
 
@@ -60,7 +60,13 @@ namespace comptonsoft {
 class DetectorHit
 {
 public:
-  enum class MergedPosition { KeepLeft, Midpoint, EnergyWeighted, CopyRight };
+  enum class MergedPosition
+  {
+    KeepLeft,
+    Midpoint,
+    EnergyWeighted,
+    CopyRight
+  };
 
 public:
   DetectorHit() = default;
@@ -73,8 +79,7 @@ public:
 
   DetectorHit& operator+=(const DetectorHit& r) { return merge(r); }
 
-  std::shared_ptr<DetectorHit> clone() const
-  { return std::shared_ptr<DetectorHit>(new DetectorHit(*this)); }
+  std::shared_ptr<DetectorHit> clone() const { return std::shared_ptr<DetectorHit>(new DetectorHit(*this)); }
 
   void setRunID(int32_t v) { runID_ = v; }
   int32_t RunID() const { return runID_; }
@@ -93,21 +98,22 @@ public:
   void setInstrumentID(int v) { instrumentID_ = v; }
   int InstrumentID() const { return instrumentID_; }
 
-  void setDetectorChannelID(const DetectorBasedChannelID& v)
-  { detectorChannelID_ = v; }
+  void setDetectorChannelID(const DetectorBasedChannelID& v) { detectorChannelID_ = v; }
   void setDetectorChannelID(int detectorID, int section, int index)
-  { detectorChannelID_.set(detectorID, section, index); }
-  void setDetectorID(int detectorID)
-  { detectorChannelID_.set(detectorID, ChannelID::Undefined, ChannelID::Undefined); }
+  {
+    detectorChannelID_.set(detectorID, section, index);
+  }
+  void setDetectorID(int detectorID) { detectorChannelID_.set(detectorID, ChannelID::Undefined, ChannelID::Undefined); }
   DetectorBasedChannelID DetectorChannelID() const { return detectorChannelID_; }
   int DetectorID() const { return detectorChannelID_.Detector(); }
   int DetectorSection() const { return detectorChannelID_.Section(); }
   int DetectorChannel() const { return detectorChannelID_.Channel(); }
 
-  void setReadoutChannelID(const ReadoutBasedChannelID& v)
-  { readoutChannelID_ = v; }
+  void setReadoutChannelID(const ReadoutBasedChannelID& v) { readoutChannelID_ = v; }
   void setReadoutChannelID(int readoutModuleID, int section, int index)
-  { readoutChannelID_.set(readoutModuleID, section, index); }
+  {
+    readoutChannelID_.set(readoutModuleID, section, index);
+  }
   ReadoutBasedChannelID ReadoutChannelID() const { return readoutChannelID_; }
   int ReadoutModuleID() const { return readoutChannelID_.ReadoutModule(); }
   int ReadoutSection() const { return readoutChannelID_.Section(); }
@@ -134,7 +140,13 @@ public:
   double EPI() const { return EPI_; }
   void setEPIError(double v) { EPIError_ = v; }
   double EPIError() const { return EPIError_; }
-  
+  // EPI used for hit selection and clustering (e.g., with a different baseline estimation)
+  void setEPIForSelection(double v) { EPIForSelection_ = v; }
+  double EPIForSelection() const { return EPIForSelection_; }
+
+  double ChargeCount() const { return chargeCount_; }
+  void setChargeCount(double v) { chargeCount_ = v; }
+
   double PhotonCount() const { return photonCount_; }
   void setPhotonCount(double v) { photonCount_ = v; }
   void setPhotonCountError(double v) { photonCountError_ = v; }
@@ -144,13 +156,13 @@ public:
   uint64_t FlagData() const { return flagData_; }
   void addFlagData(uint64_t f) { flagData_ |= f; }
   void clearFlagData(uint64_t f) { flagData_ &= ~f; }
-  bool isFlagData(uint64_t f) const { return (flagData_&f)==f; }
+  bool isFlagData(uint64_t f) const { return (flagData_ & f) == f; }
 
   void setFlags(uint64_t v) { flags_ = v; }
   uint64_t Flags() const { return flags_; }
   void addFlags(uint64_t f) { flags_ |= f; }
   void clearFlags(uint64_t f) { flags_ &= ~f; }
-  bool isFlags(uint64_t f) const { return (flags_&f)==f; }
+  bool isFlags(uint64_t f) const { return (flags_ & f) == f; }
 
   void setParticle(int v) { particle_ = v; }
   int Particle() const { return particle_; }
@@ -160,24 +172,21 @@ public:
   void setTimeGroup(int32_t v) { timeGroup_ = v; }
   int TimeGroup() const { return timeGroup_; }
 
-  void setRealPosition(double x, double y, double z)
-  { realPosition_.set(x, y, z); }
+  void setRealPosition(double x, double y, double z) { realPosition_.set(x, y, z); }
   void setRealPosition(const vector3_t& v) { realPosition_ = v; }
   double RealPositionX() const { return realPosition_.x(); }
   double RealPositionY() const { return realPosition_.y(); }
   double RealPositionZ() const { return realPosition_.z(); }
   vector3_t RealPosition() const { return realPosition_; }
 
-  void setPreStepPointPosition(double x, double y, double z)
-  { preStepPointPosition_.set(x, y, z); }
+  void setPreStepPointPosition(double x, double y, double z) { preStepPointPosition_.set(x, y, z); }
   void setPreStepPointPosition(const vector3_t& v) { preStepPointPosition_ = v; }
   double PreStepPointPositionX() const { return preStepPointPosition_.x(); }
   double PreStepPointPositionY() const { return preStepPointPosition_.y(); }
   double PreStepPointPositionZ() const { return preStepPointPosition_.z(); }
   vector3_t PreStepPointPosition() const { return preStepPointPosition_; }
 
-  void setPostStepPointPosition(double x, double y, double z)
-  { postStepPointPosition_.set(x, y, z); }
+  void setPostStepPointPosition(double x, double y, double z) { postStepPointPosition_.set(x, y, z); }
   void setPostStepPointPosition(const vector3_t& v) { postStepPointPosition_ = v; }
   double PostStepPointPositionX() const { return postStepPointPosition_.x(); }
   double PostStepPointPositionY() const { return postStepPointPosition_.y(); }
@@ -196,7 +205,7 @@ public:
   uint32_t Process() const { return process_; }
   void addProcess(uint32_t f) { process_ |= f; }
   void clearProcess(uint32_t f) { process_ &= ~f; }
-  bool isProcess(uint32_t f) const { return (process_&f)==f; }
+  bool isProcess(uint32_t f) const { return (process_ & f) == f; }
 
   void setSelfTriggered(bool v);
   bool SelfTriggered() const { return isFlags(flag::SelfTriggered); }
@@ -278,25 +287,17 @@ public:
    * otherwise, the pixels can share just an apex.
    * @return result
    */
-  bool isAdjacent(const DetectorHit& r, bool contact=true) const;
+  bool isAdjacent(const DetectorHit& r, bool contact = true) const;
 
-  double distance(const DetectorHit& r) const
-  { return distance(r.Position()); }
-  double distance(const vector3_t& v) const
-  { return (Position()-v).mag(); }
-  double distance2(const DetectorHit& r) const
-  { return distance2(r.Position()); }
-  double distance2(const vector3_t& v) const
-  { return (Position()-v).mag2(); }
+  double distance(const DetectorHit& r) const { return distance(r.Position()); }
+  double distance(const vector3_t& v) const { return (Position() - v).mag(); }
+  double distance2(const DetectorHit& r) const { return distance2(r.Position()); }
+  double distance2(const vector3_t& v) const { return (Position() - v).mag2(); }
 
-  bool isXStrip() const
-  { return Voxel().isXStrip(); }
-  bool isYStrip() const
-  { return Voxel().isYStrip(); }
-  bool isPixel() const
-  { return Voxel().isPixel(); }
-  bool isVoxel() const
-  { return Voxel().isVoxel(); }
+  bool isXStrip() const { return Voxel().isXStrip(); }
+  bool isYStrip() const { return Voxel().isYStrip(); }
+  bool isPixel() const { return Voxel().isPixel(); }
+  bool isVoxel() const { return Voxel().isVoxel(); }
 
   /**
    * merge the given hit to this object. This method is used for merging
@@ -307,9 +308,7 @@ public:
   /**
    * merge the given hit signal occurring in an adjacent pixel.
    */
-  DetectorHit& mergeAdjacentSignal(const DetectorHit& r,
-                                   MergedPosition mergedPosition,
-                                   bool setClusteredFlag=true);
+  DetectorHit& mergeAdjacentSignal(const DetectorHit& r, MergedPosition mergedPosition, bool setClusteredFlag = true);
 
   // override new/delete operators
   // by using boost::pool library for fast memory allocation
@@ -333,6 +332,8 @@ private:
   double PHA_ = 0.0;
   double EPI_ = 0.0;
   double EPIError_ = 0.0;
+  double EPIForSelection_ = 0.0;
+  double chargeCount_ = 0.0;
   double photonCount_ = 0.0;
   double photonCountError_ = 0.0;
   uint64_t flagData_ = 0ul;
@@ -368,14 +369,12 @@ private:
 
 inline bool DetectorHit::isInSameDetector(const DetectorHit& r) const
 {
-  return ( TimeGroup() == r.TimeGroup()
-           && InstrumentID() == r.InstrumentID()
-           && DetectorID() == r.DetectorID() );
+  return (TimeGroup() == r.TimeGroup() && InstrumentID() == r.InstrumentID() && DetectorID() == r.DetectorID());
 }
 
 inline bool DetectorHit::isInSameVoxel(const DetectorHit& r) const
 {
-  return ( isInSameDetector(r) && Voxel() == r.Voxel() );
+  return (isInSameDetector(r) && Voxel() == r.Voxel());
 }
 
 // override new/delete operators
@@ -383,15 +382,13 @@ inline bool DetectorHit::isInSameVoxel(const DetectorHit& r) const
 #if DetectorHit_BoostPool
 extern boost::pool<> DetectorHitAllocator;
 
-inline
-void* DetectorHit::operator new(size_t)
+inline void* DetectorHit::operator new(size_t)
 {
-  void *aHit = (void*)DetectorHitAllocator.malloc();
+  void* aHit = (void*)DetectorHitAllocator.malloc();
   return aHit;
 }
 
-inline
-void DetectorHit::operator delete(void *aHit)
+inline void DetectorHit::operator delete(void* aHit)
 {
   if (aHit != 0) DetectorHitAllocator.free(aHit);
 }

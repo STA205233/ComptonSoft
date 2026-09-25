@@ -17,46 +17,53 @@
  *                                                                       *
  *************************************************************************/
 
-#include "NanoGRAMSTPCDataProcessor.hh"
+
+#ifndef COMPTONSOFT_NanoGRAMSSimpleFilter_H
+#define COMPTONSOFT_NanoGRAMSSimpleFilter_H 1
+
+#include <iostream>
+
+#include "NanoGRAMSFFTFilterImpl.hh"
 
 namespace comptonsoft
 {
 namespace grams
 {
 
-bool isTPCDataUsable(int error_flags)
+struct SimpleFilterParam
 {
-  if ((error_flags==0)||(error_flags==4)) {
-    return true;
-  } else {
-    return false;
-  }
-}
+  double lowFrequency = 0.0;
+  double highFrequency = 0.0;
+};
 
-TPCTreeReader::TPCTreeReader(TTree* tpc_tree)
-    : tpc_tree_buffer_(tpc_tree)
+using SimpleFilter = FFTFilterImpl<SimpleFilterParam>;
+
+template <>
+inline void FFTFilterImpl<SimpleFilterParam>::ApplyFilter()
 {
-  if (tpc_tree_buffer_.nEntries() > 0) {
-    // the waveform layout (registered DPP channels) is taken from the first entry
-    tpc_tree_buffer_.getEntry(0);
-    tpc_tree_buffer_.updateWaveformLayoutFromRegisteredChannels();
+  auto histFFT = fftConversion_->GetHistFFT();
+  auto fft = fftConversion_->GetFFT();
+  auto inverseFFT = fftConversion_->GetFFTInverse();
+  if (!histFFT) {
+    std::cerr << "FFT has not been executed" << std::endl;
+    return;
   }
-}
-
-TPCTreeReader::~TPCTreeReader() = default;
-
-bool TPCTreeReader::readNextEntry(int64_t& raw_event_id)
-{
-  if (current_entry_ >= tpc_tree_buffer_.nEntries()) {
-    return false;
+  const int nBins = histFFT->GetNbinsX();
+  for (int ibin = 1; ibin <= nBins; ++ibin) {
+    const double frequency = fftConversion_->GetFrequency(histFFT->GetBinCenter(ibin));
+    double im = 0.0;
+    double re = 0.0;
+    fft->GetPointComplex(ibin - 1, re, im);
+    if (frequency < param_.lowFrequency || frequency > param_.highFrequency) {
+      inverseFFT->SetPoint(ibin - 1, 0.0, 0.0);
+    }
+    else {
+      inverseFFT->SetPoint(ibin - 1, re / static_cast<double>(nBins), im / static_cast<double>(nBins));
+    }
   }
-
-  raw_event_id = current_entry_;
-  tpc_tree_buffer_.getEntry(current_entry_);
-  current_unix_time_ = tpc_tree_buffer_.representativeUnixTime();
-  ++current_entry_;
-  return true;
 }
 
 } /* namespace grams */
 } /* namespace comptonsoft */
+
+#endif /* COMPTONSOFT_NanoGRAMSSimpleFilter_H */

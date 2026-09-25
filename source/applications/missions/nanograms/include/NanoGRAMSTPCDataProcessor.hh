@@ -19,140 +19,45 @@
 
 /**
  * @file NanoGRAMSTPCDataProcessor.hh
- * @brief TPC tree processing and output writers for NanoGRAMS data reduction.
+ * @brief TPC tree reader for NanoGRAMS data reduction.
  * @author Satoshi Takashima
  * @date 2026-05-17
+ * @date 2026-09-24 | the event selection is moved to the detector unit; this reader only reads the tree
  */
 
 #ifndef COMPTONSOFT_NanoGRAMSTPCDataProcessor_H
 #define COMPTONSOFT_NanoGRAMSTPCDataProcessor_H 1
 
-#include <array>
 #include <cstdint>
-#include <string>
-#include <vector>
 
-#include "AstroUnits.hh"
-#include "NanoGRAMSConfig.hh"
-#include "NanoGRAMSFECGeometry.hh"
-#include "NanoGRAMSLightAnalysis.hh"
 #include "NanoGRAMSTPCTreeIO.hh"
 
 class TTree;
 
 namespace comptonsoft
 {
-namespace unit = anlgeant4::unit;
-
-class TPCProperty;
-
 namespace grams
 {
 
-struct RawFECHit
-{
-  int fec           = 0;
-  uint64_t ti       = 0;
-  double drift_time = 0.0 * unit::us;
-  double light_roi_charge = 0.0 * unit::coulomb;
-  std::vector<int16_t> channel_fecs;
-  std::vector<int16_t> channels;
-  // Main-analysis energies after event-time gain correction, in internal units.
-  std::vector<double>  energies;
-  // Common-mode-subtracted ADC values retained for quicklook diagnostics.
-  std::vector<float>   adus;
-};
-
-struct FECSelectionInput
-{
-  const std::array<PixelADU, NUM_VATA>& adu_cmn_sub_values;
-  const std::array<PixelADU, NUM_VATA>& hit_selection_energy_values;
-  const std::array<double, NUM_VATA>& drift_times;
-  std::array<PixelMask, NUM_VATA>& claimed_pixels;
-  int fec           = 0;
-  bool charge_selection_enabled = false;
-  bool light_cosmic = false;
-  bool light_pileup = false;
-};
-
-enum class TPCEventType : int16_t
-{
-  Error  = -1,
-  Other  = 0,
-  Gamma  = 1,
-  Cosmic = 2,
-  PileUp = 3,
-  TimeUp = 4,
-};
-
-class FECTITracker
-{
-public:
-  FECTITracker();
-  uint64_t absoluteTi(int fec, uint32_t ti_value);
-
-private:
-  std::vector<uint64_t> overflow_;
-  std::vector<uint32_t> prev_ti_;
-  std::vector<uint8_t>  have_prev_ti_;
-};
-
-class FECChargeSelector
-{
-public:
-  FECChargeSelector(const Config& cfg, const TPCProperty& tpc_property);
-
-  std::vector<RawFECHit> selectHits(const TPCTreeBuffer& tpc_tree_buffer,
-                                    FECTITracker& fec_ti_tracker,
-                                    bool charge_selection_enabled,
-                                    bool light_cosmic,
-                                    bool light_pileup,
-                                    bool& rejected_by_excluded_core) const;
-
-private:
-  bool fillSelectedChannels(const FECSelectionInput& input, RawFECHit& hit) const;
-  bool isTimeUp(const FECSelectionInput& input) const;
-  bool isRejectedByTiming(const FECSelectionInput& input) const;
-  bool hasExcludedCorePixel(int fec, const PixelADU& hit_selection_energy) const;
-  PixelMask buildAllowedPixelMask(int fec, int core_ch) const;
-  bool hasExtraHighPixel(const FECSelectionInput& input,
-                         const PixelMask& allowed_pixels) const;
-  std::vector<std::pair<int, int>> collectClusterPixels(const FECSelectionInput& input,
-                                                        int core_ch) const;
-  void fillHitChannels(const FECSelectionInput& input,
-                       const std::vector<std::pair<int, int>>& selected_pixels,
-                       RawFECHit& hit) const;
-  double hitSelectionEnergy(int fec, int ch, double adu_cmn_sub) const;
-
-  const Config& cfg_;
-  const TPCProperty& tpc_property_;
-  AnodeChannelTopology anode_topology_;
-  bool include_diag_ = false;
-  std::array<PixelMask, NUM_VATA> masks_{};
-};
+/**
+ * true if the TPC data of the event is usable,
+ * i.e., the error flags (data inconsistency) are 0 or 4.
+ */
+bool isTPCDataUsable(int error_flags);
 
 class TPCTreeReader
 {
 public:
-  TPCTreeReader(TTree* tpc_tree,
-                const Config& cfg,
-                const TPCProperty& tpc_property);
+  explicit TPCTreeReader(TTree* tpc_tree);
   ~TPCTreeReader();
 
   bool readNextEntry(int64_t& raw_event_id);
-  void extractCurrentEventHits(std::vector<RawFECHit>& event_hits);
   const TPCTreeBuffer& currentBuffer() const { return tpc_tree_buffer_; }
-  TPCEventType currentEventType() const { return current_event_type_; }
   uint32_t currentUnixTime() const { return current_unix_time_; }
 
 private:
-  Config cfg_;
-  TPCTreeBuffer       tpc_tree_buffer_;
-  FECChargeSelector   fec_selector_;
-  LightTimingState    light_timing_;
-  FECTITracker        fec_ti_tracker_;
+  TPCTreeBuffer tpc_tree_buffer_;
   int64_t current_entry_ = 0;
-  TPCEventType current_event_type_ = TPCEventType::Error;
   uint32_t current_unix_time_ = 0;
 };
 
