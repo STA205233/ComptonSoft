@@ -19,8 +19,7 @@
 #include "NanoGRAMSQuickLookTreeIO.hh"
 #include "VCSModule.hh"
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
 class NanoGRAMSReadTPCEvents;
 class RealDetectorUnitNanoGRAMS;
@@ -50,6 +49,8 @@ public:
 
 private:
   std::vector<int> selectedClusters() const;
+  // clusters rejected by their own flags (independent of the detector-level rejection)
+  std::vector<int> rejectedClusters() const;
   grams::TPCEventType classifyEvent(const std::vector<int>& selected_clusters) const;
   bool shouldWrite(grams::TPCEventType event_type, const std::vector<int>& selected_clusters) const;
 
@@ -57,11 +58,11 @@ private:
   std::vector<std::string> event_types_;
   int num_hits_ = -1;
   bool save_waveforms_ = true;
-  int output_flush_entries_ = 1000;
+  int detector_id_ = 0;
 
   const NanoGRAMSReadTPCEvents* tpc_events_ = nullptr;
-  RealDetectorUnitNanoGRAMS* detector_ = nullptr;
-  std::unique_ptr<grams::QuickLookTreeOutputWriter> writer_;
+  const RealDetectorUnitNanoGRAMS* detector_ = nullptr;
+  std::unique_ptr<grams::QuickLookTreeIO> writer_;
 };
 
 } /* namespace comptonsoft */

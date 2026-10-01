@@ -86,6 +86,8 @@ private:
   float pha_ = 0.0;
   float epi_ = 0.0;
   float epi_error_ = 0.0;
+  float light_pha_ = 0.0;
+  float light_pha_error_ = 0.0;
   float photon_count_ = 0.0;
   float photon_count_error_ = 0.0;
   uint64_t flag_data_ = 0ul;

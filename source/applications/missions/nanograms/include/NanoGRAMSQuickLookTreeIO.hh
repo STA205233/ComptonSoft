@@ -32,22 +32,28 @@
 class TFile;
 class TTree;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
 class RealDetectorUnitNanoGRAMS;
 
-namespace grams
-{
+namespace grams {
 
 enum class TPCEventType : int16_t
 {
-  Error  = -1,
-  Other  = 0,
-  Gamma  = 1,
+  Error = -1,
+  Other = 0,
+  Gamma = 1,
   Cosmic = 2,
   PileUp = 3,
   TimeUp = 4,
+  // breakdown of the events that were formerly classified as Other
+  ExcludedCore = 5,     // the highest pixel of an FEC is an excluded pixel
+  NoCluster = 6,        // no reconstructed cluster
+  LightNotGamma = 7,    // light is not gamma-like (GammaRequired mode)
+  RejPixelCount = 8,    // all the clusters rejected: number of pixels out of range
+  RejCollinear = 9,     // all the clusters rejected: three pixels on a line
+  RejMultiCluster = 10, // all the clusters rejected: another cluster in the same FEC
+  RejTimeUp = 11,       // all the clusters rejected: drift time over the limit
 };
 
 /**
@@ -60,38 +66,65 @@ enum class TPCEventType : int16_t
  *   (RealDetectorUnitNanoGRAMS::LightIntegratedCharge of the general and pileup analysis channels;
  *    0 for the other channels)
  * - hit_*: pixels of the selected clusters (reconstructed hits)
+ * - rej_hit_*: pixels of the rejected clusters (same layout as hit_*)
+ * - rej_cluster_type: rejection flags of each rejected cluster (bit0: TimeUp, bit1: PixelCountOutOfRange,
+ *   bit2: Collinear, bit3: MultipleClustersInFEC)
  * @date 2026-09-24 | rewritten to take the data from RealDetectorUnitNanoGRAMS
  */
-class QuickLookTreeOutputWriter
+class QuickLookTreeIO
 {
 public:
-  QuickLookTreeOutputWriter(const std::string& output_file_path,
-                            const RealDetectorUnitNanoGRAMS& detector,
-                            bool save_waveforms = true,
-                            int flush_entries = 1000);
-  ~QuickLookTreeOutputWriter();
+  QuickLookTreeIO(const std::string& output_file_path, const RealDetectorUnitNanoGRAMS& detector,
+                  bool save_waveforms = true);
+  ~QuickLookTreeIO();
 
   /**
    * @param selected_clusters indices of the reconstructed hits to be written in hit_* branches
+   * @param rejected_clusters indices of the reconstructed hits to be written in rej_hit_* branches.
+   *        rej_cluster_type holds the rejection flags (bit0: TimeUp, bit1: PixelCountOutOfRange,
+   *        bit2: Collinear, bit3: MultipleClustersInFEC) of each rejected cluster.
    */
-  void fillEvent(int64_t raw_event_id,
-                 TPCEventType event_type,
-                 RealDetectorUnitNanoGRAMS& detector,
-                 const std::vector<int>& selected_clusters);
+  void fillEvent(int64_t raw_event_id, TPCEventType event_type, const RealDetectorUnitNanoGRAMS& detector,
+                 const std::vector<int>& selected_clusters, const std::vector<int>& rejected_clusters);
   std::string close();
 
 private:
+  // pixels of the clusters; cluster_id is the index in the list of the clusters written
+  struct ClusterBranches
+  {
+    std::vector<int16_t> pixel_fec;
+    std::vector<int16_t> pixel_ch;
+    std::vector<float> pixel_adu;
+    std::vector<float> pixel_energy;
+    std::vector<int16_t> pixel_cluster_id;
+    std::vector<int16_t> num_pixels;
+
+    void clear()
+    {
+      pixel_fec.clear();
+      pixel_ch.clear();
+      pixel_adu.clear();
+      pixel_energy.clear();
+      pixel_cluster_id.clear();
+      num_pixels.clear();
+    }
+  };
+
   void bindBranches();
+  void bindClusterBranches(const std::string& prefix, ClusterBranches& branches);
+  void setClusterBranchAddresses(const std::string& prefix, ClusterBranches& branches);
+  void fillClusters(const RealDetectorUnitNanoGRAMS& detector, const std::vector<int>& clusters,
+                    ClusterBranches& branches) const;
+  void setBranchAddresses();
   void flush();
   void fillChargeMaps(const RealDetectorUnitNanoGRAMS& detector);
   void fillWaveforms(const RealDetectorUnitNanoGRAMS& detector);
   static std::vector<int16_t> validLightChannels(const RealDetectorUnitNanoGRAMS& detector);
 
-  std::filesystem::path  output_path_;
+  std::filesystem::path output_path_;
   std::unique_ptr<TFile> file_;
   std::unique_ptr<TTree> quicklook_tree_;
   bool save_waveforms_ = true;
-  int flush_entries_ = 1000;
   int waveform_len_ = 0;
   int waveform_num_channels_ = 0;
   std::string adu_leaflist_;
@@ -105,8 +138,8 @@ private:
   std::string waveform_leaflist_;
 
   int64_t raw_event_id_ = 0;
-  int16_t event_type_   = 0;
-  int16_t cmn_method_   = 0;
+  int16_t event_type_ = 0;
+  int16_t cmn_method_ = 0;
   int32_t waveform_len_branch_ = 0;
   int32_t waveform_num_channels_branch_ = 0;
   std::vector<float> adu_cmn_sub_;
@@ -118,12 +151,9 @@ private:
   std::array<double, NUM_CH_DPP_MAX> light_integrated_charge_{};
   std::vector<int16_t> waveform_dpp_ch_;
   std::vector<float> waveform_;
-  std::vector<int16_t> hit_pixel_fec_;
-  std::vector<int16_t> hit_pixel_ch_;
-  std::vector<float> hit_pixel_adu_;
-  std::vector<float> hit_pixel_energy_;
-  std::vector<int16_t> hit_pixel_cluster_id_;
-  std::vector<int16_t> hit_num_pixels_;
+  ClusterBranches hit_;      // selected clusters
+  ClusterBranches rej_hit_;  // rejected clusters
+  std::vector<uint32_t> rej_cluster_type_;
 };
 
 } /* namespace grams */

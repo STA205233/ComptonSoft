@@ -1,13 +1,13 @@
 #include "RealDetectorUnitNanoGRAMS.hh"
+#include "DetectorHit.hh"
+#include "LightData.hh"
+#include "NanoGRAMSChargeToEnergySpline.hh"
+#include "NanoGRAMSMultiChannelData.hh"
 #include <algorithm>
 #include <cmath>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
-#include "DetectorHit.hh"
-#include "LightData.hh"
-#include "NanoGRAMSChargeToEnergySpline.hh"
-#include "NanoGRAMSMultiChannelData.hh"
 
 namespace comptonsoft {
 
@@ -15,7 +15,7 @@ RealDetectorUnitNanoGRAMS::RealDetectorUnitNanoGRAMS()
   : unixTime_(0u),
     eventFlags_(0u),
     lightIntegratedCharge_(NumLightChannels, 0.0),
-    photonCount_(0.0),
+    lightPHA_(0.0),
     maxDriftTime_(67.0 * CLHEP::us),
     electricField_(0.0),
     crossFECMergeDriftTimeTolerance_(-1.0),
@@ -72,7 +72,7 @@ void RealDetectorUnitNanoGRAMS::initializeEvent()
   unixTime_ = 0u;
   eventFlags_ = 0u;
   std::fill(lightIntegratedCharge_.begin(), lightIntegratedCharge_.end(), 0.0);
-  photonCount_ = 0.0;
+  lightPHA_ = 0.0;
   clusterCorrespondence_.clear();
 
   for (int i = 0; i < NumberOfLightData(); ++i) {
@@ -97,6 +97,7 @@ void RealDetectorUnitNanoGRAMS::selectHits()
       hit->setEPIForSelection(mcd->getEPIForSelection(hit->DetectorChannel()));
     }
     hit->setTI(ti_[fec]);
+    hit->setLightPHA(lightPHA_);
     hit->setPhotonCount(photonCount_);
     // x and y are determined from the pixel in reconstruct()
     hit->setLocalPosition(0.0, 0.0, depthFromDriftTime(driftTime_[fec]));
@@ -111,7 +112,7 @@ void RealDetectorUnitNanoGRAMS::setExcludedCorePixels(int fec, const std::vector
     excludedCorePixels_.assign(NumFECs, std::vector<int8_t>(NumChannelsPerFEC, 0));
   }
   std::fill(excludedCorePixels_.at(fec).begin(), excludedCorePixels_.at(fec).end(), 0);
-  for (const int channel: channels) {
+  for (const int channel : channels) {
     excludedCorePixels_.at(fec).at(channel) = 1;
   }
 }
@@ -165,7 +166,7 @@ void RealDetectorUnitNanoGRAMS::applyRecombinationCorrection(DetectorHitVector& 
     if (!chargeToEnergySpline_) {
       throw std::runtime_error("RealDetectorUnitNanoGRAMS::applyRecombinationCorrection: electric field is not set.");
     }
-    for (auto& hit: hits) {
+    for (auto& hit : hits) {
       const double epi = hit->EPI();
       if (!(epi > 0.0)) {
         hit->setEPI(0.0);
@@ -184,7 +185,7 @@ void RealDetectorUnitNanoGRAMS::applyRecombinationCorrection(DetectorHitVector& 
     RealDetectorUnitLArTPCPixel::applyRecombinationCorrection(hits);
   }
 
-  for (auto& hit: hits) {
+  for (auto& hit : hits) {
     hit->setEnergy(hit->EPI());
     hit->setEnergyError(hit->EPIError());
   }
@@ -198,8 +199,7 @@ double RealDetectorUnitNanoGRAMS::depthFromDriftTime(double driftTime) const
 
 void RealDetectorUnitNanoGRAMS::reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed)
 {
-  std::transform(hitSignals.begin(), hitSignals.end(),
-                 std::back_inserter(hitsReconstructed),
+  std::transform(hitSignals.begin(), hitSignals.end(), std::back_inserter(hitsReconstructed),
                  [](const DetectorHit_sptr& hit) {
                    auto hit2 = hit->clone();
                    hit2->setEnergy(hit->EPI());
@@ -220,7 +220,7 @@ void RealDetectorUnitNanoGRAMS::reconstruct(const DetectorHitVector& hitSignals,
   setClusterFlags(hitSignals, hitsReconstructed, clusterCorrespondence_);
 
   // EnergyCharge keeps the charge-equivalent energy (charge x W_ion) before the recombination correction
-  for (auto& hit: hitsReconstructed) {
+  for (auto& hit : hitsReconstructed) {
     hit->setEnergyCharge(hit->EPI());
   }
 
@@ -260,37 +260,35 @@ void RealDetectorUnitNanoGRAMS::clusterForNanoGRAMS(DetectorHitVector& hits,
       seeds.push_back(i);
     }
   }
-  std::stable_sort(seeds.begin(), seeds.end(), [&hits](int a, int b) {
-    return hits[a]->EPIForSelection() > hits[b]->EPIForSelection();
-  });
+  std::stable_sort(seeds.begin(), seeds.end(),
+                   [&hits](int a, int b) { return hits[a]->EPIForSelection() > hits[b]->EPIForSelection(); });
 
   std::vector<uint8_t> used(numHits, 0);
   DetectorHitVector clusters;
   groups.clear();
-  for (const int seed: seeds) {
+  for (const int seed : seeds) {
     if (used[seed]) {
       continue;
     }
     used[seed] = 1;
     std::vector<int> group{seed};
-    for (std::size_t head = 0; head < group.size(); ++head) {
-      const DetectorHit_sptr& current = hits[group[head]];
-      for (const int j: candidates) {
-        if (used[j]) {
-          continue;
-        }
-        const DetectorHit_sptr& neighbor = hits[j];
-        if (std::abs(neighbor->VoxelX() - current->VoxelX()) > range ||
-            std::abs(neighbor->VoxelY() - current->VoxelY()) > range) {
-          continue;
-        }
-        if (neighbor->DetectorSection() != current->DetectorSection() &&
-            !canMergeAcrossFECs(current->DetectorSection(), neighbor->DetectorSection())) {
-          continue;
-        }
-        used[j] = 1;
-        group.push_back(j);
+    // only the pixels within the range from the core are merged (no chaining through the merged pixels)
+    const DetectorHit_sptr& core = hits[seed];
+    for (const int j : candidates) {
+      if (used[j]) {
+        continue;
       }
+      const DetectorHit_sptr& neighbor = hits[j];
+      if (std::abs(neighbor->VoxelX() - core->VoxelX()) > range ||
+          std::abs(neighbor->VoxelY() - core->VoxelY()) > range) {
+        continue;
+      }
+      if (neighbor->DetectorSection() != core->DetectorSection() &&
+          !canMergeAcrossFECs(core->DetectorSection(), neighbor->DetectorSection())) {
+        continue;
+      }
+      used[j] = 1;
+      group.push_back(j);
     }
 
     // the core (highest EPIForSelection) represents the cluster (channel ID, FEC)
@@ -305,8 +303,7 @@ void RealDetectorUnitNanoGRAMS::clusterForNanoGRAMS(DetectorHitVector& hits,
   hits = std::move(clusters);
 }
 
-void RealDetectorUnitNanoGRAMS::setClusterFlags(const DetectorHitVector& pixelHits,
-                                                DetectorHitVector& clusters,
+void RealDetectorUnitNanoGRAMS::setClusterFlags(const DetectorHitVector& pixelHits, DetectorHitVector& clusters,
                                                 const std::vector<std::vector<int>>& groups) const
 {
   const double coreThreshold = ClusteringEnergyThreshold();
@@ -337,8 +334,7 @@ void RealDetectorUnitNanoGRAMS::setClusterFlags(const DetectorHitVector& pixelHi
 
     for (int j = 0; j < static_cast<int>(pixelHits.size()); ++j) {
       const DetectorHit& pixel = *pixelHits[j];
-      if (pixel.DetectorSection() != fec ||
-          std::find(group.begin(), group.end(), j) != group.end() ||
+      if (pixel.DetectorSection() != fec || std::find(group.begin(), group.end(), j) != group.end() ||
           isExcludedCorePixel(fec, pixel.DetectorChannel())) {
         continue;
       }
@@ -386,7 +382,8 @@ void RealDetectorUnitNanoGRAMS::updateTime()
         // choose the number of wraps that is closest to the elapsed unixtime.
         // the unixtime has a lag of a few seconds, which is much shorter than the wrap period.
         const double elapsedTicks = (unixTime_ - previousUnixTime_) * CLHEP::s / TITickPeriod;
-        numWraps = std::max<int64_t>(0, std::llround((elapsedTicks - static_cast<double>(raw - previousRaw)) / static_cast<double>(PERIOD)));
+        numWraps = std::max<int64_t>(
+            0, std::llround((elapsedTicks - static_cast<double>(raw - previousRaw)) / static_cast<double>(PERIOD)));
       }
       ti_[fec] = (previous - previousRaw) + numWraps * PERIOD + raw;
     }

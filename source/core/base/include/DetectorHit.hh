@@ -144,9 +144,10 @@ public:
   void setEPIForSelection(double v) { EPIForSelection_ = v; }
   double EPIForSelection() const { return EPIForSelection_; }
 
-  double ChargeCount() const { return chargeCount_; }
-  void setChargeCount(double v) { chargeCount_ = v; }
-
+  double LightPHA() const { return lightPHA_; }
+  double LightPHAError() const { return lightPHAError_; }
+  void setLightPHA(double v) { lightPHA_ = v; }
+  void setLightPHAError(double v) { lightPHAError_ = v; }
   double PhotonCount() const { return photonCount_; }
   void setPhotonCount(double v) { photonCount_ = v; }
   void setPhotonCountError(double v) { photonCountError_ = v; }
@@ -333,7 +334,9 @@ private:
   double EPI_ = 0.0;
   double EPIError_ = 0.0;
   double EPIForSelection_ = 0.0;
-  double chargeCount_ = 0.0;
+
+  double lightPHAError_ = 0.0;
+  double lightPHA_ = 0.0;
   double photonCount_ = 0.0;
   double photonCountError_ = 0.0;
   uint64_t flagData_ = 0ul;

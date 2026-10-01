@@ -11,7 +11,7 @@ clustering:
     gain_tp_file: products/testpulse_data.csv
     gain_cache_seconds: 60.0
     output_flush_entries: 1000
-    quicklook_event_types: [gamma,error,other,cosmic,pileup,timeup] # error/other/gamma/cosmic/pileup/timeup
+    quicklook_event_types: [gamma,error,other,cosmic,pileup,timeup,excluded,nocluster,lightnotgamma,rej_pixelcount,rej_collinear,rej_multicluster,rej_timeup]
     quicklook_num_hits: -1 # Negative values disable hit-count selection.
     quicklook_save_waveforms: false
 light: 
@@ -26,6 +26,12 @@ light:
     out_roi_peak_thr_mV: 15.0
     transimpedance_feedback_resistance_ohm: 3200.0
     output_impedance_ohm: 50.0
+    sipm_gain: 1.0e+6
+    light_gain_correction:
+        4: 1.0
+        5: 1.0
+        6: 1.0
+        7: 1.0
 charge: 
     noise_th_kev: 150.0
     clustering_pix_range: [1, 3]

@@ -27,12 +27,9 @@
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
 
-namespace comptonsoft
-{
-namespace grams
-{
-namespace
-{
+namespace comptonsoft {
+namespace grams {
+namespace {
 
 namespace unit = anlgeant4::unit;
 namespace fs = std::filesystem;
@@ -59,8 +56,7 @@ LightEventSelectionMode parseLightEventSelectionMode(const std::string& mode)
     return LightEventSelectionMode::Disabled;
   }
 
-  throw std::runtime_error(
-      "light.event_selection_mode must be gamma_required, veto_only, or disabled.");
+  throw std::runtime_error("light.event_selection_mode must be gamma_required, veto_only, or disabled.");
 }
 
 LightAnalysisMethod parseLightAnalysisMethod(const std::string& method)
@@ -126,8 +122,17 @@ std::string lightEventSelectionModeName(LightEventSelectionMode mode)
   return "unknown";
 }
 
-std::vector<int> readDPPChannelList(const YAML::Node& node,
-                                    const std::string& key)
+void readLightGainCorrection(const YAML::Node& node, std::array<double, NUM_CH_DPP_MAX>& gainCorrection)
+{
+  const std::map<int, double> mapping = node.as<std::map<int, double>>();
+  for (auto p : mapping) {
+    if (p.first < NUM_CH_DPP_MAX && p.first >= 0) {
+      gainCorrection[p.first] = p.second;
+    }
+  }
+}
+
+std::vector<int> readDPPChannelList(const YAML::Node& node, const std::string& key)
 {
   const std::vector<int> channels = node.as<std::vector<int>>();
   for (const int ch : channels) {
@@ -138,8 +143,7 @@ std::vector<int> readDPPChannelList(const YAML::Node& node,
   return channels;
 }
 
-void printDPPChannelList(const std::string& label,
-                         const std::vector<int>& channels)
+void printDPPChannelList(const std::string& label, const std::vector<int>& channels)
 {
   std::cout << label << ": [ ";
   bool first_channel = true;
@@ -147,7 +151,8 @@ void printDPPChannelList(const std::string& label,
     if (first_channel) {
       std::cout << ch;
       first_channel = false;
-    } else {
+    }
+    else {
       std::cout << ", " << ch;
     }
   }
@@ -163,25 +168,24 @@ void appendCoreExcludePixel(std::vector<int>& pixels, const YAML::Node& node)
   pixels.push_back(pix);
 }
 
-std::vector<int> readCoreExcludePixelList(const YAML::Node& node,
-                                          int fec,
-                                          const AnodeChannelTopology& topology)
+std::vector<int> readCoreExcludePixelList(const YAML::Node& node, int fec, const AnodeChannelTopology& topology)
 {
   std::vector<int> pixels;
 
   if (isPeripheralToken(node)) {
     pixels = topology.periphery[fec];
-  } else if (node.IsSequence()) {
+  }
+  else if (node.IsSequence()) {
     for (const auto& item : node) {
       if (isPeripheralToken(item)) {
-        pixels.insert(pixels.end(),
-                      topology.periphery[fec].begin(),
-                      topology.periphery[fec].end());
-      } else {
+        pixels.insert(pixels.end(), topology.periphery[fec].begin(), topology.periphery[fec].end());
+      }
+      else {
         appendCoreExcludePixel(pixels, item);
       }
     }
-  } else {
+  }
+  else {
     appendCoreExcludePixel(pixels, node);
   }
 
@@ -200,8 +204,7 @@ void readClusteringPixelRange(Config& cfg, const YAML::Node& nodeCharge)
   cfg.pix_max = range[1];
 }
 
-double readChargeThresholdKeV(const YAML::Node& nodeCharge,
-                              const std::string& key)
+double readChargeThresholdKeV(const YAML::Node& nodeCharge, const std::string& key)
 {
   if (nodeCharge[key]) {
     return nodeCharge[key].as<double>() * unit::keV;
@@ -230,71 +233,92 @@ void readGeneralConfig(Config& cfg, const YAML::Node& node)
 void readLightConfig(Config& cfg, const YAML::Node& node)
 {
   const auto nodeLight = node["light"];
-  cfg.light_gamma_thr  = nodeLight["light_gamma_thr_mV"].as<double>() * (unit::volt/1000.0);
-  cfg.light_cosmic_thr = nodeLight["light_cosmic_thr_mV"].as<double>() * (unit::volt/1000.0);
-  cfg.pre_roi_window   = nodeLight["pre_roi_window_us"].as<double>() * unit::us;
-  cfg.post_roi_window  = nodeLight["post_roi_window_us"].as<double>() * unit::us;
-  cfg.out_roi_peak_thr = nodeLight["out_roi_peak_thr_mV"].as<double>() * (unit::volt/1000.0);
+  cfg.light_gamma_thr = nodeLight["light_gamma_thr_mV"].as<double>() * (unit::volt / 1000.0);
+  cfg.light_cosmic_thr = nodeLight["light_cosmic_thr_mV"].as<double>() * (unit::volt / 1000.0);
+  cfg.pre_roi_window = nodeLight["pre_roi_window_us"].as<double>() * unit::us;
+  cfg.post_roi_window = nodeLight["post_roi_window_us"].as<double>() * unit::us;
+  cfg.out_roi_peak_thr = nodeLight["out_roi_peak_thr_mV"].as<double>() * (unit::volt / 1000.0);
+  std::string gain_mode = nodeLight["light_gain_mode"].as<std::string>();
+  if (gain_mode == "direct") {
+    cfg.light_gain_mode = LightGainMode::Direct;
+  }
+  else if (gain_mode == "amp_property") {
+    cfg.light_gain_mode = LightGainMode::UseAmpProperty;
+  }
+  else {
+    throw std::runtime_error("invalid gain mode");
+  }
+
+  cfg.light_direct_gain = nodeLight["light_direct_gain"].as<double>() * (unit::volt / 1000.0 * unit::ns);
   cfg.light_transimpedance_feedback_resistance_ohm =
       nodeLight["transimpedance_feedback_resistance_ohm"].as<double>() * unit::ohm;
-  cfg.light_output_impedance_ohm =
-      nodeLight["output_impedance_ohm"].as<double>() * unit::ohm;
-  std::cout << "konnichiwa: " << nodeLight["output_impedance_ohm"].as<double>() << std::endl;
-  if (cfg.light_transimpedance_feedback_resistance_ohm <= 0.0*unit::ohm) {
-    throw std::runtime_error(
-        "light.transimpedance_feedback_resistance_ohm must be positive.");
+  cfg.light_output_impedance_ohm = nodeLight["output_impedance_ohm"].as<double>() * unit::ohm;
+  if (cfg.light_transimpedance_feedback_resistance_ohm <= 0.0 * unit::ohm) {
+    throw std::runtime_error("light.transimpedance_feedback_resistance_ohm must be positive.");
   }
-  if (cfg.light_output_impedance_ohm < 0.0*unit::ohm) {
+  if (cfg.light_output_impedance_ohm < 0.0 * unit::ohm) {
     throw std::runtime_error("light.output_impedance_ohm must be non-negative.");
   }
+  cfg.sipm_gain = nodeLight["sipm_gain"].as<double>();
+  if (cfg.sipm_gain < 0) {
+    throw std::runtime_error("light.sipm_gain must be non-negative");
+  }
+  readLightGainCorrection(nodeLight["light_gain_correction"], cfg.light_gain_correction);
+
   cfg.general_analysis_channels =
-      readDPPChannelList(nodeLight["general_analysis_channels"],
-                         "light.general_analysis_channels");
+      readDPPChannelList(nodeLight["general_analysis_channels"], "light.general_analysis_channels");
   cfg.pileup_analysis_channels =
-      readDPPChannelList(nodeLight["pileup_analysis_channels"],
-                         "light.pileup_analysis_channels");
+      readDPPChannelList(nodeLight["pileup_analysis_channels"], "light.pileup_analysis_channels");
   if (nodeLight["waveform_analysis"]) {
-    cfg.light_analysis_method = parseLightAnalysisMethod(
-        nodeLight["waveform_analysis"].as<std::string>());
+    cfg.light_analysis_method = parseLightAnalysisMethod(nodeLight["waveform_analysis"].as<std::string>());
   }
   if (nodeLight["use_for_event_selection"]) {
-    cfg.use_light_for_event_selection =
-        nodeLight["use_for_event_selection"].as<bool>();
+    cfg.use_light_for_event_selection = nodeLight["use_for_event_selection"].as<bool>();
     if (cfg.use_light_for_event_selection) {
       cfg.light_event_selection_mode = LightEventSelectionMode::GammaRequired;
-    } else {
+    }
+    else {
       cfg.light_event_selection_mode = LightEventSelectionMode::Disabled;
     }
   }
   if (nodeLight["event_selection_mode"]) {
-    cfg.light_event_selection_mode = parseLightEventSelectionMode(
-        nodeLight["event_selection_mode"].as<std::string>());
+    cfg.light_event_selection_mode = parseLightEventSelectionMode(nodeLight["event_selection_mode"].as<std::string>());
   }
   if (cfg.light_event_selection_mode == LightEventSelectionMode::Disabled) {
     cfg.use_light_for_event_selection = false;
-  } else {
+  }
+  else {
     cfg.use_light_for_event_selection = true;
   }
 
   std::cout << "readLightConfig()" << std::endl;
-  std::cout << "light_gamma_thr_mV:  "  << cfg.light_gamma_thr / (unit::volt/1000.0) << std::endl;
-  std::cout << "light_cosmic_thr_mV:  " << cfg.light_cosmic_thr / (unit::volt/1000.0) << std::endl;
-  std::cout << "pre_roi_window_us:  "   << cfg.pre_roi_window / unit::us << std::endl;
-  std::cout << "post_roi_window_us: "   << cfg.post_roi_window / unit::us << std::endl;
-  std::cout << "out_roi_peak_thr_mV: "  << cfg.out_roi_peak_thr  / (unit::volt/1000.0) << std::endl;
+  std::cout << "light_gamma_thr_mV:  " << cfg.light_gamma_thr / (unit::volt / 1000.0) << std::endl;
+  std::cout << "light_cosmic_thr_mV:  " << cfg.light_cosmic_thr / (unit::volt / 1000.0) << std::endl;
+  std::cout << "pre_roi_window_us:  " << cfg.pre_roi_window / unit::us << std::endl;
+  std::cout << "post_roi_window_us: " << cfg.post_roi_window / unit::us << std::endl;
+  std::cout << "out_roi_peak_thr_mV: " << cfg.out_roi_peak_thr / (unit::volt / 1000.0) << std::endl;
+  std::cout << "light_gain_mode: "
+            << (cfg.light_gain_mode == LightGainMode::Direct
+                    ? "direct"
+                    : (cfg.light_gain_mode == LightGainMode::UseAmpProperty ? "amp_property" : "None"))
+            << std::endl;
+  ;
   std::cout << "transimpedance_feedback_resistance_ohm: "
-            << cfg.light_transimpedance_feedback_resistance_ohm / unit::ohm<< std::endl;
-  std::cout << "output_impedance_ohm: "
-            << cfg.light_output_impedance_ohm / unit::ohm<< std::endl;
+            << cfg.light_transimpedance_feedback_resistance_ohm / unit::ohm << std::endl;
+  std::cout << "output_impedance_ohm: " << cfg.light_output_impedance_ohm / unit::ohm << std::endl;
+  std::cout << "SiPM_gain: " << cfg.sipm_gain << std::endl;
+  std::cout << "light_direct_gain: " << cfg.light_direct_gain / unit::ns / (unit::volt / 1000.0) << " nsmV"
+            << std::endl;
+  std::cout << "light_gain_correction: ";
+  for (const auto g : cfg.light_gain_correction) {
+    std::cout << g << " ";
+  }
+  std::cout << std::endl;
   std::cout << "waveform_analysis:   " << lightAnalysisMethodName(cfg.light_analysis_method) << std::endl;
-  std::cout << "event_selection_mode: "
-            << lightEventSelectionModeName(cfg.light_event_selection_mode) << std::endl;
-  std::cout << "use_for_event_selection: "
-            << cfg.use_light_for_event_selection << std::endl;
-  printDPPChannelList("general_analysis_channels",
-                      cfg.general_analysis_channels);
-  printDPPChannelList("pileup_analysis_channels",
-                      cfg.pileup_analysis_channels);
+  std::cout << "event_selection_mode: " << lightEventSelectionModeName(cfg.light_event_selection_mode) << std::endl;
+  std::cout << "use_for_event_selection: " << cfg.use_light_for_event_selection << std::endl;
+  printDPPChannelList("general_analysis_channels", cfg.general_analysis_channels);
+  printDPPChannelList("pileup_analysis_channels", cfg.pileup_analysis_channels);
 
   if (nodeLight["pedestal_correction"]) {
     cfg.light_pedestal_correction = nodeLight["pedestal_correction"].as<bool>();
@@ -325,12 +349,10 @@ void readLightConfig(Config& cfg, const YAML::Node& node)
     cfg.light_digitizer_offset_correction = nodeLight["digitizer_offset_correction"].as<bool>();
   }
   if (nodeLight["digitizer_offset_range_start_index"]) {
-    cfg.light_digitizer_offset_range_start_index =
-        nodeLight["digitizer_offset_range_start_index"].as<int>();
+    cfg.light_digitizer_offset_range_start_index = nodeLight["digitizer_offset_range_start_index"].as<int>();
   }
   if (nodeLight["digitizer_offset_range_stop_index"]) {
-    cfg.light_digitizer_offset_range_stop_index =
-        nodeLight["digitizer_offset_range_stop_index"].as<int>();
+    cfg.light_digitizer_offset_range_stop_index = nodeLight["digitizer_offset_range_stop_index"].as<int>();
   }
 
   if (nodeLight["fft_filter"]) {
@@ -361,10 +383,8 @@ void readChargeConfig(Config& cfg, const YAML::Node& node)
 {
   const auto nodeCharge = node["charge"];
   readClusteringPixelRange(cfg, nodeCharge);
-  cfg.core_noise_energy_th =
-      readChargeThresholdKeV(nodeCharge, "noise_th_kev");
-  cfg.spread_thr_energy =
-      readChargeThresholdKeV(nodeCharge, "spread_thr_kev");
+  cfg.core_noise_energy_th = readChargeThresholdKeV(nodeCharge, "noise_th_kev");
+  cfg.spread_thr_energy = readChargeThresholdKeV(nodeCharge, "spread_thr_kev");
   if (nodeCharge["cross_fec_merge_drift_time_tolerance_us"]) {
     cfg.cross_fec_merge_drift_time_tolerance =
         nodeCharge["cross_fec_merge_drift_time_tolerance_us"].as<double>() * unit::us;
@@ -377,18 +397,18 @@ void readChargeConfig(Config& cfg, const YAML::Node& node)
     if (fec < 0 || fec >= NUM_VATA) {
       throw std::runtime_error("core_exclude_pix contains an FEC outside 0-3.");
     }
-    cfg.core_exclude_pix[fec] =
-        readCoreExcludePixelList(item.second, fec, topology);
+    cfg.core_exclude_pix[fec] = readCoreExcludePixelList(item.second, fec, topology);
   }
 
-  std::cout << "pix_min: "           << cfg.pix_min           << std::endl;
-  std::cout << "pix_max: "           << cfg.pix_max           << std::endl;
+  std::cout << "pix_min: " << cfg.pix_min << std::endl;
+  std::cout << "pix_max: " << cfg.pix_max << std::endl;
   std::cout << "noise_th_kev: " << cfg.core_noise_energy_th / unit::keV << std::endl;
-  std::cout << "spread_thr_kev: "    << cfg.spread_thr_energy / unit::keV << std::endl;
+  std::cout << "spread_thr_kev: " << cfg.spread_thr_energy / unit::keV << std::endl;
   if (cfg.cross_fec_merge_drift_time_tolerance >= 0.0) {
-    std::cout << "cross_fec_merge_drift_time_tolerance_us: "
-              << cfg.cross_fec_merge_drift_time_tolerance / unit::us << std::endl;
-  } else {
+    std::cout << "cross_fec_merge_drift_time_tolerance_us: " << cfg.cross_fec_merge_drift_time_tolerance / unit::us
+              << std::endl;
+  }
+  else {
     std::cout << "cross_fec_merge_drift_time_tolerance_us: disabled" << std::endl;
   }
 
@@ -400,7 +420,8 @@ void readChargeConfig(Config& cfg, const YAML::Node& node)
     for (const auto& pix : pix_vec) {
       if (index == 0) {
         std::cout << pix;
-      } else {
+      }
+      else {
         std::cout << ", " << pix;
       }
       ++index;
@@ -426,16 +447,12 @@ void readDPPConfigFile(Config& cfg, const std::string& config_path)
   const auto delayNode = configNode["savefile"]["listwave_delay"]["value"];
   const std::vector<int> delays = delayNode.as<std::vector<int>>();
   if (delays.size() != NUM_CH_DPP_MAX) {
-    throw std::runtime_error(
-        "savefile.listwave_delay.value in " + config_path +
-        " must contain 8 DPP channel values.");
+    throw std::runtime_error("savefile.listwave_delay.value in " + config_path + " must contain 8 DPP channel values.");
   }
 
   for (int ch = 0; ch < NUM_CH_DPP_MAX; ++ch) {
     if (delays[ch] < 0) {
-      throw std::runtime_error(
-          "savefile.listwave_delay.value contains a negative delay in " +
-          config_path);
+      throw std::runtime_error("savefile.listwave_delay.value contains a negative delay in " + config_path);
     }
     cfg.light_delay_counts[ch] = delays[ch];
   }
@@ -454,8 +471,7 @@ void readDPPConfigFile(Config& cfg, const std::string& config_path)
 
 void readDPPConfig(Config& cfg, const std::string& tpctree_file)
 {
-  const std::string config_path =
-      (fs::path(tpctree_file).parent_path() / "config_dpp.yaml").string();
+  const std::string config_path = (fs::path(tpctree_file).parent_path() / "config_dpp.yaml").string();
   readDPPConfigFile(cfg, config_path);
 }
 

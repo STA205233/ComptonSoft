@@ -73,20 +73,12 @@ private:
 
   std::vector<int> collectValidChannels(const RealDetectorUnitNanoGRAMS& detector,
                                         const std::vector<int>& channels) const;
-  LightPeaks analyzeChannelGroup(const RealDetectorUnitNanoGRAMS& detector,
-                                 const std::vector<int>& channels) const;
+  LightPeaks analyzeChannelGroup(const RealDetectorUnitNanoGRAMS& detector, const std::vector<int>& channels) const;
   double integratedROICharge(const LightData& lightData) const;
-  void printEventSummary(const RealDetectorUnitNanoGRAMS& detector,
-                         const std::vector<int>& generalChannels,
-                         const std::vector<int>& pileupChannels) const;
 
 private:
   const NanoGRAMSReadTPCEvents* reader_ = nullptr;
   const grams::Config* config_ = nullptr;
-
-  // the first events are printed for checking the light analysis
-  static constexpr int NumEventsToLog = 3;
-  int numLoggedEvents_ = 0;
 };
 
 } /* namespace comptonsoft */

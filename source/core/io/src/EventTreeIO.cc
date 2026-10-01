@@ -54,6 +54,8 @@ void EventTreeIO::define_branches()
   tree_->Branch("rawpha",         rawpha_.data(),         "rawpha[num_hits]/I");
   tree_->Branch("pha",            pha_.data(),            "pha[num_hits]/F");
   tree_->Branch("epi",            epi_.data(),            "epi[num_hits]/F");
+  tree_->Branch("light_pha",      light_pha_.data(),      "light_pha[num_hits]/F");
+  tree_->Branch("light_pha_error", light_pha_error_.data(), "light_pha_error[num_hits]/F");
   tree_->Branch("photon_count",   photon_count_.data(),   "photon_count[num_hits]/F");
   tree_->Branch("photon_count_error", photon_count_error_.data(), "photon_count_error[num_hits]/F");
   tree_->Branch("flag_data",      &flag_data_,            "flag_data/l");
@@ -104,6 +106,8 @@ void EventTreeIO::set_branch_addresses()
   tree_->SetBranchAddress("rawpha",         rawpha_.data());
   tree_->SetBranchAddress("pha",            pha_.data());
   tree_->SetBranchAddress("epi",            epi_.data());
+  tree_->SetBranchAddress("light_pha",      light_pha_.data());
+  tree_->SetBranchAddress("light_pha_error", light_pha_error_.data());
   tree_->SetBranchAddress("photon_count",   photon_count_.data());
   tree_->SetBranchAddress("photon_count_error", photon_count_error_.data());
   tree_->SetBranchAddress("flag_data",      &flag_data_);
@@ -165,6 +169,8 @@ void EventTreeIO::fillHits(const int32_t runID,
     rawpha_[i] = hit->RawPHA();
     pha_[i] = hit->PHA();
     epi_[i] = hit->EPI() / unit::keV;
+    light_pha_[i] = hit->LightPHA();
+    light_pha_error_[i] = hit->LightPHAError();
     photon_count_[i] = hit->PhotonCount();
     photon_count_error_[i] = hit->PhotonCountError();
     trackid_[i] = hit->TrackID();
@@ -218,6 +224,8 @@ DetectorHit_sptr EventTreeIO::retrieveHit(std::size_t i) const
   hit->setRawPHA(rawpha_[i]);
   hit->setPHA(pha_[i]);
   hit->setEPI(epi_[i] * unit::keV);
+  hit->setLightPHA(light_pha_[i]);
+  hit->setLightPHAError(light_pha_error_[i]);
   hit->setPhotonCount(photon_count_[i]);
   hit->setPhotonCountError(photon_count_error_[i]);
   hit->setFlagData(flag_data_);

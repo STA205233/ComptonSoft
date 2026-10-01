@@ -12,31 +12,39 @@
 #include "NanoGRAMSQuickLookWriter.hh"
 
 #include <cmath>
-#include <stdexcept>
+#include <iostream>
+#include <string>
 
+#include "CSException.hh"
 #include "DetectorHit.hh"
 #include "FlagDefinition.hh"
 #include "NanoGRAMSConfig.hh"
+#include "NanoGRAMSQuickLookTreeIO.hh"
 #include "NanoGRAMSReadTPCEvents.hh"
 #include "NanoGRAMSSelectEvents.hh"
 #include "RealDetectorUnitNanoGRAMS.hh"
 
 using namespace anlnext;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
-namespace
-{
+namespace {
 
 bool matchesEventType(const std::string& name, grams::TPCEventType event_type)
 {
-  return (name == "error" && event_type == grams::TPCEventType::Error)
-      || (name == "other" && event_type == grams::TPCEventType::Other)
-      || (name == "gamma" && event_type == grams::TPCEventType::Gamma)
-      || (name == "cosmic" && event_type == grams::TPCEventType::Cosmic)
-      || (name == "pileup" && event_type == grams::TPCEventType::PileUp)
-      || (name == "timeup" && event_type == grams::TPCEventType::TimeUp);
+  return (name == "error" && event_type == grams::TPCEventType::Error) ||
+         (name == "other" && event_type == grams::TPCEventType::Other) ||
+         (name == "gamma" && event_type == grams::TPCEventType::Gamma) ||
+         (name == "cosmic" && event_type == grams::TPCEventType::Cosmic) ||
+         (name == "pileup" && event_type == grams::TPCEventType::PileUp) ||
+         (name == "timeup" && event_type == grams::TPCEventType::TimeUp) ||
+         (name == "excluded" && event_type == grams::TPCEventType::ExcludedCore) ||
+         (name == "nocluster" && event_type == grams::TPCEventType::NoCluster) ||
+         (name == "lightnotgamma" && event_type == grams::TPCEventType::LightNotGamma) ||
+         (name == "rej_pixelcount" && event_type == grams::TPCEventType::RejPixelCount) ||
+         (name == "rej_collinear" && event_type == grams::TPCEventType::RejCollinear) ||
+         (name == "rej_multicluster" && event_type == grams::TPCEventType::RejMultiCluster) ||
+         (name == "rej_timeup" && event_type == grams::TPCEventType::RejTimeUp);
 }
 
 } // namespace
@@ -48,10 +56,10 @@ NanoGRAMSQuickLookWriter::~NanoGRAMSQuickLookWriter() = default;
 ANLStatus NanoGRAMSQuickLookWriter::mod_define()
 {
   define_parameter("quicklook_file", &mod_class::quicklook_file_);
+  define_parameter("detector_id", &mod_class::detector_id_);
   define_parameter("event_types", &mod_class::event_types_);
   define_parameter("num_hits", &mod_class::num_hits_);
   define_parameter("save_waveforms", &mod_class::save_waveforms_);
-  define_parameter("output_flush_entries", &mod_class::output_flush_entries_);
   return AS_OK;
 }
 
@@ -62,19 +70,19 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_initialize()
     return status;
   }
   if (!exist_module("NanoGRAMSReadTPCEvents")) {
+    std::cerr << "NanoGRAMSReadTPCEvents not found" << std::endl;
     return AS_QUIT_ERROR;
   }
   get_module("NanoGRAMSReadTPCEvents", &tpc_events_);
 
-  for (auto& detector : getDetectorManager()->getDetectors()) {
-    if (detector->checkType(DetectorType::NanoGRAMS)) {
-      // always RealDetectorUnitNanoGRAMS
-      detector_ = static_cast<RealDetectorUnitNanoGRAMS*>(detector.get());
-      break;
-    }
+  auto detector = getDetectorManager()->getDetectorByID(detector_id_);
+
+  if (detector->checkType(DetectorType::NanoGRAMS)) {
+    // always RealDetectorUnitNanoGRAMS
+    detector_ = static_cast<RealDetectorUnitNanoGRAMS*>(detector);
   }
   if (detector_ == nullptr) {
-    throw std::runtime_error("NanoGRAMSQuickLookWriter: no NanoGRAMS detector is found.");
+    throw CSException("NanoGRAMSQuickLookWriter: no NanoGRAMS detector is found.");
   }
   return AS_OK;
 }
@@ -88,13 +96,10 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_analyze()
   }
 
   if (!writer_) {
-    writer_ = std::make_unique<grams::QuickLookTreeOutputWriter>(
-        quicklook_file_,
-        *detector_,
-        save_waveforms_,
-        output_flush_entries_);
+    writer_ = std::make_unique<grams::QuickLookTreeIO>(quicklook_file_, *detector_, save_waveforms_);
   }
-  writer_->fillEvent(tpc_events_->currentRawEventId(), event_type, *detector_, selected_clusters);
+  writer_->fillEvent(tpc_events_->currentRawEventId(), event_type, *detector_, selected_clusters,
+                     rejectedClusters());
   return AS_OK;
 }
 
@@ -120,17 +125,27 @@ std::vector<int> NanoGRAMSQuickLookWriter::selectedClusters() const
   return selected;
 }
 
+std::vector<int> NanoGRAMSQuickLookWriter::rejectedClusters() const
+{
+  std::vector<int> rejected;
+  for (int i = 0; i < detector_->NumberOfReconstructedHits(); ++i) {
+    if (NanoGRAMSSelectEvents::isClusterRejected(*detector_->getReconstructedHit(i))) {
+      rejected.push_back(i);
+    }
+  }
+  return rejected;
+}
+
 grams::TPCEventType NanoGRAMSQuickLookWriter::classifyEvent(const std::vector<int>& selected_clusters) const
 {
   if (detector_->isEventFlags(nanograms_event_flag::ExcludedCore)) {
-    return grams::TPCEventType::Other;
+    return grams::TPCEventType::ExcludedCore;
   }
   if (!selected_clusters.empty()) {
     return grams::TPCEventType::Gamma;
   }
 
-  const bool usesLight =
-      (tpc_events_->config().light_event_selection_mode != grams::LightEventSelectionMode::Disabled);
+  const bool usesLight = (tpc_events_->config().light_event_selection_mode != grams::LightEventSelectionMode::Disabled);
   if (usesLight && detector_->isEventFlags(nanograms_event_flag::LightCosmic)) {
     return grams::TPCEventType::Cosmic;
   }
@@ -149,6 +164,34 @@ grams::TPCEventType NanoGRAMSQuickLookWriter::classifyEvent(const std::vector<in
   }
   if (timeUp) {
     return grams::TPCEventType::TimeUp;
+  }
+
+  if (tpc_events_->config().light_event_selection_mode == grams::LightEventSelectionMode::GammaRequired &&
+      !detector_->isEventFlags(nanograms_event_flag::LightGamma)) {
+    return grams::TPCEventType::LightNotGamma;
+  }
+
+  const int numHits = detector_->NumberOfReconstructedHits();
+  if (numHits == 0) {
+    return grams::TPCEventType::NoCluster;
+  }
+
+  // all the clusters are rejected: classify by the reason (first match in the priority order)
+  uint64_t clusterFlags = 0;
+  for (int i = 0; i < numHits; ++i) {
+    clusterFlags |= detector_->getReconstructedHit(i)->Flags();
+  }
+  if (clusterFlags & flag::NanoGRAMSPixelCountOutOfRange) {
+    return grams::TPCEventType::RejPixelCount;
+  }
+  if (clusterFlags & flag::NanoGRAMSCollinear) {
+    return grams::TPCEventType::RejCollinear;
+  }
+  if (clusterFlags & flag::NanoGRAMSMultipleClustersInFEC) {
+    return grams::TPCEventType::RejMultiCluster;
+  }
+  if (clusterFlags & flag::NanoGRAMSTimeUp) {
+    return grams::TPCEventType::RejTimeUp;
   }
   return grams::TPCEventType::Other;
 }

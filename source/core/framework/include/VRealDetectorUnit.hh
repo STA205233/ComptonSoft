@@ -280,11 +280,13 @@ public:
   { detectorHits_.push_back(hit); }
   int NumberOfDetectorHits() const { return detectorHits_.size(); }
   DetectorHit_sptr getDetectorHit(int i) { return detectorHits_[i]; }
+  const DetectorHit_sptr getDetectorHit(int i )const {return detectorHits_[i];}
   
   void insertReconstructedHit(DetectorHit_sptr hit)
   { reconstructedHits_.push_back(hit); }
   int NumberOfReconstructedHits() const { return reconstructedHits_.size(); }
   DetectorHit_sptr getReconstructedHit(int i) { return reconstructedHits_[i]; };
+  const DetectorHit_sptr getReconstructedHit(int i) const { return reconstructedHits_[i]; };
 
   virtual void printDetectorParameters(std::ostream& os) const;
 

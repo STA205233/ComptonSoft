@@ -58,7 +58,9 @@ void HitTreeIO::define_branches()
   hittree_->Branch("pha",              &pha_,              "pha/F");
   hittree_->Branch("epi",              &epi_,              "epi/F");
   hittree_->Branch("epi_error",        &epi_error_,        "epi_error/F");
-  hittree_->Branch("photon_count",     &photon_count_,    "photon_count/F");
+  hittree_->Branch("light_pha",        &light_pha_,        "light_pha/F");
+  hittree_->Branch("light_pha_error",  &light_pha_error_,  "light_pha_error/F");
+  hittree_->Branch("photon_count",     &photon_count_,     "photon_count/F");
   hittree_->Branch("photon_count_error", &photon_count_error_, "photon_count_error/F");
   hittree_->Branch("flag_data",        &flag_data_,        "flag_data/l");
   hittree_->Branch("flags",            &flags_,            "flags/l");
@@ -118,6 +120,8 @@ void HitTreeIO::set_branch_addresses()
   hittree_->SetBranchAddress("pha",              &pha_);
   hittree_->SetBranchAddress("epi",              &epi_);
   hittree_->SetBranchAddress("epi_error",        &epi_error_);
+  hittree_->SetBranchAddress("light_pha",        &light_pha_);
+  hittree_->SetBranchAddress("light_pha_error",  &light_pha_error_);
   hittree_->SetBranchAddress("photon_count",     &photon_count_);
   hittree_->SetBranchAddress("photon_count_error", &photon_count_error_);
   hittree_->SetBranchAddress("flag_data",        &flag_data_);
@@ -183,6 +187,8 @@ void HitTreeIO::fillHits(const int32_t runID,
     pha_ = hit->PHA();
     epi_ = hit->EPI() / unit::keV;
     epi_error_ = hit->EPIError() / unit::keV;
+    light_pha_ = hit->LightPHA();
+    light_pha_error_ = hit->LightPHAError();
     photon_count_ = hit->PhotonCount();
     photon_count_error_ = hit->PhotonCountError();
     flag_data_ = hit->FlagData();
@@ -234,6 +240,8 @@ DetectorHit_sptr HitTreeIO::retrieveHit() const
   hit->setPHA(pha_);
   hit->setEPI(epi_ * unit::keV);
   hit->setEPIError(epi_error_ * unit::keV);
+  hit->setLightPHA(light_pha_);
+  hit->setLightPHAError(light_pha_error_);
   hit->setPhotonCount(photon_count_);
   hit->setPhotonCountError(photon_count_error_);
   hit->setFlagData(flag_data_);

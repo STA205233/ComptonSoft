@@ -33,9 +33,9 @@ constexpr uint64_t LightGamma = 0x0001u;   // light signal is gamma-like
 constexpr uint64_t LightCosmic = 0x0002u;  // light signal is cosmic-like
 constexpr uint64_t LightPileup = 0x0004u;  // light pileup is found
 constexpr uint64_t ExcludedCore = 0x0008u; // the highest pixel of an FEC is one of the excluded pixels
-} // namespace nanograms_event_flags
+} // namespace nanograms_event_flag
 
-class RealDetectorUnitNanoGRAMS final : public RealDetectorUnitLArTPCPixel
+class RealDetectorUnitNanoGRAMS : public RealDetectorUnitLArTPCPixel
 {
 public:
   // fixed readout configuration: section = FEC (VATA), channel = VATA channel
@@ -110,7 +110,13 @@ public:
   double LightIntegratedCharge(int dppChannel) const { return lightIntegratedCharge_.at(dppChannel); }
   const std::vector<double>& LightIntegratedCharges() const { return lightIntegratedCharge_; }
 
-  // photon count of the event, shared by all the hits of this detector (set to the hits in selectHits())
+  // light signal size of the event (raw, pre-calibration; charge summed over the general analysis channels,
+  // impedance-corrected and converted to an electron count), shared by all the hits of this detector
+  // (set to the hits in selectHits())
+  void setLightPHA(double v) { lightPHA_ = v; }
+  double LightPHA() const { return lightPHA_; }
+
+  // photon count of the event, calibrated from LightPHA with the SiPM gain
   void setPhotonCount(double v) { photonCount_ = v; }
   double PhotonCount() const { return photonCount_; }
 
@@ -122,7 +128,8 @@ public:
   /**
    * parameters of the cluster selection. The energies are compared with EPIForSelection.
    * - a cluster core must be above ClusteringEnergyThreshold and not an excluded pixel;
-   *   pixels above ClusteringSplitThreshold within ClusteringRange are merged.
+   *   pixels above ClusteringSplitThreshold within ClusteringRange from the core are merged
+   *   (the range is measured from the core only; merged pixels do not extend the cluster further).
    * - pixels in different FECs are merged only if the difference of the drift times is within the tolerance
    *   (negative tolerance: no merge across FECs).
    * - flags (flag::NanoGRAMS*) are set on each reconstructed hit, but no hit is removed here.
@@ -176,6 +183,7 @@ private:
   uint32_t unixTime_;
   uint64_t eventFlags_;
   std::vector<double> lightIntegratedCharge_;
+  double lightPHA_;
   double photonCount_;
   double maxDriftTime_;
   double electricField_;

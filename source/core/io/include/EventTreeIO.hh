@@ -88,6 +88,8 @@ private:
   std::array<int32_t, MaxHits> rawpha_;
   std::array<float, MaxHits> pha_;
   std::array<float, MaxHits> epi_;
+  std::array<float, MaxHits> light_pha_;
+  std::array<float, MaxHits> light_pha_error_;
   std::array<float, MaxHits> photon_count_;
   std::array<float, MaxHits> photon_count_error_;
   uint64_t flag_data_ = 0ul;

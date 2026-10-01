@@ -92,6 +92,7 @@ set(ComptonSoftCore_DetectorModels_Classes
   detector_models/src/SimDetectorUnit3DVoxel.cc
   detector_models/src/SimDetectorUnitLArTPC.cc
   detector_models/src/SimDetectorUnitLArTPCPixel.cc
+  detector_models/src/SimDetectorUnitNanoGRAMS.cc
   detector_models/src/WeightingPotentialPixel.cc
   detector_models/src/WeightingPotentialStrip.cc
   detector_models/src/VLArRecombinationModel.cc

@@ -51,20 +51,17 @@ class NanoGRAMSDataReduction < ANL::ANLApp
     # hits, clustering, flags, recombination correction (the thresholds are given by the yaml)
     chain :SelectHits
     with_parameters(analysis_map: {
-                      "NanoGRAMS" => {
-                        detector_type: 7,
-                        reconstruction_mode: 4,
-                        threshold: 0.0,
-                        threshold_cathode: 0.0,
-                        threshold_anode: 0.0,
-                      }
+                      # [detector_type, reconstruction_mode, threshold, threshold_cathode, threshold_anode]
+                      "NanoGRAMS" => [7, 4, 0.0, 0.0, 0.0]
                     })
 
     # quicklook of all the events (before the selection)
     if @quicklook_file
       chain :NanoGRAMSQuickLookWriter
       with_parameters(quicklook_file: @quicklook_file,
-                      event_types: ["gamma", "other", "cosmic", "pileup", "timeup"],
+                      event_types: ["gamma", "other", "cosmic", "pileup", "timeup",
+                                      "excluded", "nocluster", "lightnotgamma",
+                                      "rej_pixelcount", "rej_collinear", "rej_multicluster", "rej_timeup"],
                       num_hits: -1,
                       save_waveforms: false,
                       output_flush_entries: 1000)

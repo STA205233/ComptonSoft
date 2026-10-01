@@ -28,10 +28,8 @@
 #include "AstroUnits.hh"
 #include "NanoGRAMSConstants.hh"
 
-namespace comptonsoft
-{
-namespace grams
-{
+namespace comptonsoft {
+namespace grams {
 
 namespace unit = anlgeant4::unit;
 
@@ -56,30 +54,39 @@ enum class LightAnalysisMethod
   EachChannel, // each waveform is analyzed, and the maximum over the channels is taken
 };
 
+enum class LightGainMode
+{
+  Direct,         // p.e. -> Voltage
+  UseAmpProperty, // p.e -> amp gain -> voltage
+};
 struct Config
 {
-  int daq_time      = 0;
-  int pix_min       = 0;
-  int pix_max       = 0;
+  int daq_time = 0;
+  int pix_min = 0;
+  int pix_max = 0;
 
-  double adc2mv           = (1.0 / 8192.0) * 1000.0;
+  double adc2mv = (1.0 / 8192.0) * 1000.0;
   double core_noise_energy_th = 0.0 * anlgeant4::unit::keV;
-  double light_gamma_thr  = 0.0;
+  double light_gamma_thr = 0.0;
   double light_cosmic_thr = 0.0;
   double spread_thr_energy = 0.0 * anlgeant4::unit::keV;
-  double drift_time_max   = 0.0 * anlgeant4::unit::us;
-  //double late_window      = 0.0;
-  //double late_peak_thr    = 0.0;
-  double pre_roi_window      = 0.0;
-  double post_roi_window     = 0.0;
-  double out_roi_peak_thr    = 0.0;
+  double drift_time_max = 0.0 * anlgeant4::unit::us;
+  // double late_window      = 0.0;
+  // double late_peak_thr    = 0.0;
+  double pre_roi_window = 0.0;
+  double post_roi_window = 0.0;
+  double out_roi_peak_thr = 0.0;
+  LightGainMode light_gain_mode = LightGainMode::UseAmpProperty;
   double light_transimpedance_feedback_resistance_ohm = 3200.0 * unit::ohm;
   double light_output_impedance_ohm = 50.0 * unit::ohm;
+  double sipm_gain = 1e6;
+  double light_direct_gain = 100.0 * unit::ns * unit::volt / 1000; // per p.e
   double timebin_ns_override = 0.0;
   double cross_fec_merge_drift_time_tolerance = -1.0 * anlgeant4::unit::us;
+  std::array<double, NUM_CH_DPP_MAX> light_gain_correction = {1, 1, 1, 1, 1, 1, 1, 1};
 
   std::vector<int> general_analysis_channels = {4, 6, 5, 7};
-  std::vector<int> pileup_analysis_channels  = {4};
+  std::vector<int> pileup_analysis_channels = {4};
   std::array<int, NUM_CH_DPP_MAX> light_delay_counts{};
   LightAnalysisMethod light_analysis_method = LightAnalysisMethod::Average;
   LightEventSelectionMode light_event_selection_mode = LightEventSelectionMode::GammaRequired;
@@ -89,8 +96,8 @@ struct Config
   // pedestal: estimated by light_pedestal_method and subtracted
   bool light_pedestal_correction = false;
   LightPedestalMethod light_pedestal_method = LightPedestalMethod::ValueRange;
-  double light_pedestal_range_min = -100.0; // ValueRange (in ADC)
-  double light_pedestal_range_max = 0.0;    // ValueRange (in ADC)
+  double light_pedestal_range_min = -100.0;      // ValueRange (in ADC)
+  double light_pedestal_range_max = 0.0;         // ValueRange (in ADC)
   double light_pedestal_time_window_start = 0.0; // TimeWindow (time = 0 at the trigger)
   double light_pedestal_time_window_stop = 0.0;  // TimeWindow
   // digitizer offset of the interleaved ADC phases, estimated in the sample index range [start, stop)

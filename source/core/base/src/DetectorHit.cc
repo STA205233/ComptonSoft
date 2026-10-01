@@ -198,7 +198,6 @@ DetectorHit& DetectorHit::mergeAdjacentSignal(const DetectorHit& r, MergedPositi
   setPHA(PHA() + r.PHA());
   setEPI(EPI() + r.EPI());
   setEPIForSelection(EPIForSelection() + r.EPIForSelection());
-  setChargeCount(ChargeCount() + r.ChargeCount());
   // Photon count is not merged because it is assumed to be common in the detector.
 
   if (RealTime() > r.RealTime()) {
