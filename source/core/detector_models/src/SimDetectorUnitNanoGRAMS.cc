@@ -20,10 +20,13 @@
 #include "SimDetectorUnitNanoGRAMS.hh"
 
 #include <algorithm>
+#include <array>
 #include <boost/format.hpp>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
@@ -46,10 +49,38 @@ SimDetectorUnitNanoGRAMS::SimDetectorUnitNanoGRAMS()
 };
 
 SimDetectorUnitNanoGRAMS::~SimDetectorUnitNanoGRAMS() = default;
+
 void SimDetectorUnitNanoGRAMS::initializeEvent()
 {
-  RealDetectorUnitLArTPCPixel::initializeEvent();
+  RealDetectorUnitNanoGRAMS::initializeEvent();
   LArTPCDeviceSimulation::initializeEvent();
+}
+
+double SimDetectorUnitNanoGRAMS::driftTimeFromDepth(double z) const
+{
+  if (!(DriftVelocity() > 0.0)) {
+    throw std::runtime_error("SimDetectorUnitNanoGRAMS: drift velocity must be set (> 0) to calculate the drift time.");
+  }
+  return (getSizeZ() * 0.5 - z) / DriftVelocity();
+}
+
+void SimDetectorUnitNanoGRAMS::reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed)
+{
+  std::array<double, NumFECs> maxZ;
+  maxZ.fill(-std::numeric_limits<double>::infinity());
+  for (const DetectorHit_sptr& hit : hitSignals) {
+    hit->setEPIForSelection(hit->EPI());
+    const int fec = hit->DetectorSection();
+    if (fec < 0 || fec >= NumFECs) {
+      continue;
+    }
+    const double localZ = hit->LocalPositionZ();
+    if (maxZ[fec] < localZ) {
+      maxZ[fec] = localZ;
+      setDriftTime(fec, driftTimeFromDepth(localZ));
+    }
+  }
+  RealDetectorUnitNanoGRAMS::reconstruct(hitSignals, hitsReconstructed);
 }
 
 double SimDetectorUnitNanoGRAMS::ChargeCollectionEfficiency(const VoxelID& voxel, double x, double y, double z) const

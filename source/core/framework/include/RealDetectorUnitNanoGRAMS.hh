@@ -22,6 +22,7 @@
 #include "NanoGRAMSMultiChannelData.hh"
 #include "RealDetectorUnitLArTPCPixel.hh"
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <vector>
 namespace comptonsoft {
@@ -83,7 +84,14 @@ public:
   // absolute time = unixtime of the first event + (TI - TI of the first event) x 160 ns (valid after selectHits())
   double Time(int fec) const { return time_.at(fec); }
   void setDriftTime(int fec, double v) { driftTime_.at(fec) = v; }
-  double DriftTime(int fec) const { return driftTime_.at(fec); }
+  /// drift time of the FEC; NaN if the FEC number is out of range (e.g. undefined section)
+  double DriftTime(int fec) const
+  {
+    if (fec < 0 || fec >= static_cast<int>(driftTime_.size())) {
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+    return driftTime_[fec];
+  }
   // drift time counter as recorded by the DAQ (clock counts), -1 if not given
   void setRawDriftTime(int fec, uint32_t v) { rawDriftTime_.at(fec) = v; }
   int64_t RawDriftTime(int fec) const { return rawDriftTime_.at(fec); }
@@ -91,6 +99,8 @@ public:
   // unixtime attached to the current event by the DAQ; also given to the MCDs (temperature correction)
   void setUnixTime(uint32_t v);
   uint32_t UnixTime() const { return unixTime_; }
+
+  void determinePosition(DetectorHitVector& hits) const override;
 
   /**
    * temperature (gain drift) correction of the FECs, shared with the MCDs.

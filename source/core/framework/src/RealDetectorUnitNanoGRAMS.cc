@@ -99,8 +99,6 @@ void RealDetectorUnitNanoGRAMS::selectHits()
     hit->setTI(ti_[fec]);
     hit->setLightPHA(lightPHA_);
     hit->setPhotonCount(photonCount_);
-    // x and y are determined from the pixel in reconstruct()
-    hit->setLocalPosition(0.0, 0.0, depthFromDriftTime(driftTime_[fec]));
   }
 
   judgeExcludedCore();
@@ -197,6 +195,21 @@ double RealDetectorUnitNanoGRAMS::depthFromDriftTime(double driftTime) const
   return getSizeZ() * (0.5 - driftTime / maxDriftTime_);
 }
 
+void RealDetectorUnitNanoGRAMS::determinePosition(DetectorHitVector& hits) const
+{
+  for (auto& hit : hits) {
+    const PixelID pixel = hit->Pixel();
+    // section = FEC; the readout module ID is not defined for NanoGRAMS
+    const int fec = hit->DetectorSection();
+    const double depth = depthFromDriftTime(DriftTime(fec));
+
+    // LArTPC has capablity to determine the position in 3D, so depth sensing mode is always on.
+    hit->setPosition(PositionWithDepth(pixel, depth));
+    hit->setLocalPosition(LocalPositionWithDepth(pixel, depth));
+    hit->setPositionError(PositionError(hit->LocalPositionError()));
+  }
+}
+
 void RealDetectorUnitNanoGRAMS::reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed)
 {
   std::transform(hitSignals.begin(), hitSignals.end(), std::back_inserter(hitsReconstructed),
@@ -235,7 +248,7 @@ bool RealDetectorUnitNanoGRAMS::canMergeAcrossFECs(int fec1, int fec2) const
   if (crossFECMergeDriftTimeTolerance_ < 0.0) {
     return false;
   }
-  const double difference = std::abs(driftTime_[fec1] - driftTime_[fec2]);
+  const double difference = std::abs(DriftTime(fec1) - DriftTime(fec2));
   return std::isfinite(difference) && difference <= crossFECMergeDriftTimeTolerance_;
 }
 
@@ -312,7 +325,7 @@ void RealDetectorUnitNanoGRAMS::setClusterFlags(const DetectorHitVector& pixelHi
     const std::vector<int>& group = groups[c];
     const int fec = cluster->DetectorSection();
 
-    const double driftTime = driftTime_[fec];
+    const double driftTime = DriftTime(fec);
     if (!std::isfinite(driftTime) || driftTime >= driftTimeLimit_) {
       cluster->addFlags(flag::NanoGRAMSTimeUp);
     }

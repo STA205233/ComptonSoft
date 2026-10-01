@@ -47,7 +47,8 @@ G4VEnergyLossProcess* ionisationProcess(const G4ParticleDefinition* particle)
 
 LArTPCDeviceSimulation::LArTPCDeviceSimulation()
   : DeviceSimulation(),
-    recombinationModel_(nullptr)
+    recombinationModel_(nullptr),
+    calculator_(new G4EmCalculator())
 {
   setEFieldModel(std::make_unique<LArEFieldModel>());
   // setDiffusionDivisionNumber(1000);
@@ -237,7 +238,7 @@ double LArTPCDeviceSimulation::getdEdxFromEmCalculator(const DetectorHit_sptr& h
 
   kineticEnergy = std::max(kineticEnergy, modelLowEnergyLimit(process, couple, kineticEnergy));
 
-  return calculator_.ComputeDEDX(kineticEnergy, particle, process->GetProcessName(), couple->GetMaterial(), DBL_MAX);
+  return calculator_->ComputeDEDX(kineticEnergy, particle, process->GetProcessName(), couple->GetMaterial(), DBL_MAX);
 }
 
 double LArTPCDeviceSimulation::modelLowEnergyLimit(const G4VEnergyLossProcess* process,
@@ -294,9 +295,9 @@ void LArTPCDeviceSimulation::printdEdxDiagnostics(const DetectorHit_sptr& hit, d
   // getdEdxFromEmCalculator already clips to the low-energy limit, so reaching
   // this point means the model returned zero even inside its validity range.
   os << "  unrestricted ComputeDEDX at E:          "
-     << calculator_.ComputeDEDX(e, particle, processName, material, DBL_MAX) / (keV / cm) << " keV/cm\n";
+     << calculator_->ComputeDEDX(e, particle, processName, material, DBL_MAX) / (keV / cm) << " keV/cm\n";
   os << "  unrestricted ComputeDEDX at low limit:  "
-     << calculator_.ComputeDEDX(std::max(e, lowLimit), particle, processName, material, DBL_MAX) / (keV / cm)
+     << calculator_->ComputeDEDX(std::max(e, lowLimit), particle, processName, material, DBL_MAX) / (keV / cm)
      << " keV/cm\n";
   // Same route but with the real production cut instead of DBL_MAX, to tell
   // apart a failure caused by asking for an unrestricted value.
@@ -305,7 +306,7 @@ void LArTPCDeviceSimulation::printdEdxDiagnostics(const DetectorHit_sptr& hit, d
       cutsTable->GetEnergyCutsVector(idxG4ElectronCut)->at(cutsTable->GetCoupleIndex(couple));
   os << "  electron production cut:                " << electronCutEnergy / keV << " keV\n";
   os << "  restricted ComputeDEDX at low limit:    "
-     << calculator_.ComputeDEDX(std::max(e, lowLimit), particle, processName, material, electronCutEnergy) /
+     << calculator_->ComputeDEDX(std::max(e, lowLimit), particle, processName, material, electronCutEnergy) /
             (keV / cm)
      << " keV/cm\n";
   os << "  restricted GetDEDX (table) at E:        " << process->GetDEDX(e, couple) / (keV / cm) << " keV/cm"

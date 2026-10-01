@@ -49,6 +49,7 @@ private:
 
 protected:
   virtual DetectorHit_sptr generateHit(const DetectorHit& rawhit, const PixelID& pixel);
+  void reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed) override;
 
   void mergeHits(std::list<DetectorHit_sptr>& hits) override;
 
@@ -63,6 +64,7 @@ private:
   bool usingSymmetry_ = true;
   TH3D* CCEMap_;
   TH3D* WPMap_;
+  double driftTimeFromDepth(double z) const;
 };
 
 inline bool SimDetectorUnitNanoGRAMS::checkRange(const PixelID& pixel) const

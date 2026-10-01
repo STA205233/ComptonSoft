@@ -59,7 +59,7 @@ private:
   double driftVelocity_ = -1.0;
   // mutable because ComputeDEDX is not a const method. Note that G4EmCalculator
   // is not thread-safe, so this class must not be shared between worker threads.
-  mutable G4EmCalculator calculator_;
+  mutable G4EmCalculator* calculator_;
   mutable std::unordered_map<const G4ParticleDefinition*, G4VEnergyLossProcess*> ionisationProcessCache_;
 
 

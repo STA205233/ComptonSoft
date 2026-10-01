@@ -79,7 +79,7 @@ protected:
   void reconstruct(const DetectorHitVector& hitSignals, DetectorHitVector& hitsReconstructed) override;
 
 protected:
-  void determinePosition(DetectorHitVector& hits) const;
+  virtual void determinePosition(DetectorHitVector& hits) const;
 
 private:
   std::tuple<double, double> applyRecombinationCorrectionWithLight(const DetectorHit_sptr& hit) const;

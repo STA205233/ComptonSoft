@@ -1197,7 +1197,8 @@ void DetectorSystem::setupDetectorParameters(const DetectorSystem::ParametersNod
         if (!o) {
           BOOST_THROW_EXCEPTION(CSException("Error: In LArTPC, drift_velocity must be specified when diffusion_mode is set."));
         }
-        
+        const double value = (*o) * unit::cm / unit::second;
+        ds1->setDriftVelocity(value);
       }
     }
     if (ds->checkType(DetectorType::LArTPCPixel)) {
@@ -1215,20 +1216,30 @@ void DetectorSystem::setupDetectorParameters(const DetectorSystem::ParametersNod
         if (!o) {
           BOOST_THROW_EXCEPTION(CSException("Error: In LArTPC, drift_velocity must be specified when diffusion_mode is set."));
         }
+        const double value = (*o) * unit::cm / unit::second;
+        ds1->setDriftVelocity(value);
       }
     }
-  }
-  
-  if (auto o = parameters.drift_velocity) {
-    SimDetectorUnitLArTPC* ds1 = dynamic_cast<SimDetectorUnitLArTPC*>(ds);
-    if (ds1){
-      const double value = (*o)*unit::cm/unit::second;
-      ds1->setDriftVelocity(value);
-    }
-    SimDetectorUnitLArTPCPixel* ds2 = dynamic_cast<SimDetectorUnitLArTPCPixel*>(ds);
-    if (ds2){
-      const double value = (*o)*unit::cm/unit::second;
-      ds2->setDriftVelocity(value);
+    if (ds->checkType(DetectorType::NanoGRAMS)) {
+      SimDetectorUnitNanoGRAMS* ds1 = dynamic_cast<SimDetectorUnitNanoGRAMS*>(ds);
+      if (ds1) {
+        if (auto o = parameters.diffusion_coefficient_longitudinal) {
+          const double value = (*o) * unit::cm * unit::cm / unit::second;
+          ds1->setDiffusionCoefficientLongitudinal(value);
+        }
+        if (auto o = parameters.diffusion_coefficient_transverse) {
+          const double value = (*o) * unit::cm * unit::cm / unit::second;
+          ds1->setDiffusionCoefficientTransverse(value);
+        }
+        auto o = parameters.drift_velocity;
+        if (!o) {
+          BOOST_THROW_EXCEPTION(
+              CSException("Error: In LArTPC, drift_velocity must be specified when diffusion_mode is set."));
+        }
+        const double value = (*o) * unit::cm / unit::second;
+        ds1->setDriftVelocity(value);
+        ds1->setMaxDriftTime(ds1->getSizeZ() / value);
+      }
     }
   }
 
@@ -1426,6 +1437,9 @@ void DetectorSystem::setupReconstructionParameters(const DetectorSystem::Paramet
     if (auto* nano = dynamic_cast<RealDetectorUnitNanoGRAMS*>(detector)) {
       if (auto o = parameters.recombination_correction) {
         nano->setRecombinationCorrectionMode(*o);
+      }
+      if (auto o = parameters.photon_efficiency) {
+        nano->setPhotonDetectionEfficiency(*o);
       }
       if (auto o = parameters.w_ion) {
         nano->setWion((*o) * unit::eV);
