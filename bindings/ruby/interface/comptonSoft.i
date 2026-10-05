@@ -200,6 +200,7 @@
 #include "NanoGRAMSAnalyzeLight.hh"
 #include "NanoGRAMSSelectEvents.hh"
 #include "NanoGRAMSQuickLookWriter.hh"
+#include "NanoGRAMSLoadConfig.hh"
 
 #include "class_list_anlGeant4.hh"
 #include "comptonsoft_basic_classes.hh"
@@ -1356,6 +1357,13 @@ public:
 };
 
 #endif
+
+class NanoGRAMSLoadConfig : public VCSModule
+{
+public:
+  NanoGRAMSLoadConfig();
+  ~NanoGRAMSLoadConfig() override;
+};
 
 class NanoGRAMSReadTPCEvents : public VCSModule
 {

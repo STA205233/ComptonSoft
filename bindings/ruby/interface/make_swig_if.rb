@@ -147,6 +147,7 @@ classList = [
   ANL::SWIGClass.new("FilterByGoodTimeIntervalsForSGD", false, 'USE_FITSIO'),
   ANL::SWIGClass.new("FilterByGoodTimeIntervalsForHXI", false, 'USE_FITSIO'),
 
+  ANL::SWIGClass.new("NanoGRAMSLoadConfig"),
   ANL::SWIGClass.new("NanoGRAMSReadTPCEvents"),
   ANL::SWIGClass.new("NanoGRAMSCorrectLightWaveform"),
   ANL::SWIGClass.new("NanoGRAMSAnalyzeLight"),

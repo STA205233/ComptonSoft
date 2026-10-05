@@ -28,7 +28,7 @@
 #include "DetectorHit.hh"
 #include "FlagDefinition.hh"
 #include "NanoGRAMSConfig.hh"
-#include "NanoGRAMSReadTPCEvents.hh"
+#include "NanoGRAMSLoadConfig.hh"
 #include "RealDetectorUnitNanoGRAMS.hh"
 
 using namespace anlnext;
@@ -53,9 +53,9 @@ ANLStatus NanoGRAMSSelectEvents::mod_initialize()
     return status;
   }
 
-  const NanoGRAMSReadTPCEvents* reader = nullptr;
-  get_module("NanoGRAMSReadTPCEvents", &reader);
-  config_ = &reader->config();
+  const NanoGRAMSLoadConfig* configloader = nullptr;
+  get_module("NanoGRAMSLoadConfig", &configloader);
+  config_ = &configloader->config();
   get_module_NC("CSHitCollection", &hitCollection_);
 
   numEvents_ = 0;

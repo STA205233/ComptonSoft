@@ -133,6 +133,7 @@ class ReadHXIEventFITS;
 class WriteHXIEventFITS;
 class FilterByGoodTimeIntervalsForSGD;
 class FilterByGoodTimeIntervalsForHXI;
+class NanoGRAMSLoadConfig;
 class NanoGRAMSReadTPCEvents;
 class NanoGRAMSCorrectLightWaveform;
 class NanoGRAMSAnalyzeLight;

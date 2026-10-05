@@ -55,7 +55,8 @@ ANLStatus NanoGRAMSAnalyzeLight::mod_initialize()
   }
 
   get_module("NanoGRAMSReadTPCEvents", &reader_);
-  config_ = &reader_->config();
+  get_module("NanoGRAMSLoadConfig", &configLoader_);
+  config_ = &configLoader_->config();
   return AS_OK;
 }
 

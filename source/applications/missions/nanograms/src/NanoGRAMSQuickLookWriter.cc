@@ -75,6 +75,13 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_initialize()
   }
   get_module("NanoGRAMSReadTPCEvents", &tpc_events_);
 
+  if (!exist_module("NanoGRAMSLoadConfig")) {
+    std::cerr << "NanoGRAMSLoadConfig not found" << std::endl;
+    return AS_QUIT_ERROR;
+  }
+
+  get_module("NanoGRAMSLoadConfig", &configLoader_);
+
   auto detector = getDetectorManager()->getDetectorByID(detector_id_);
 
   if (detector->checkType(DetectorType::NanoGRAMS)) {
@@ -98,8 +105,7 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_analyze()
   if (!writer_) {
     writer_ = std::make_unique<grams::QuickLookTreeIO>(quicklook_file_, *detector_, save_waveforms_);
   }
-  writer_->fillEvent(tpc_events_->currentRawEventId(), event_type, *detector_, selected_clusters,
-                     rejectedClusters());
+  writer_->fillEvent(tpc_events_->currentRawEventId(), event_type, *detector_, selected_clusters, rejectedClusters());
   return AS_OK;
 }
 
@@ -114,7 +120,7 @@ ANLStatus NanoGRAMSQuickLookWriter::mod_end_run()
 std::vector<int> NanoGRAMSQuickLookWriter::selectedClusters() const
 {
   std::vector<int> selected;
-  if (NanoGRAMSSelectEvents::isDetectorRejected(*detector_, tpc_events_->config().light_event_selection_mode)) {
+  if (NanoGRAMSSelectEvents::isDetectorRejected(*detector_, configLoader_->config().light_event_selection_mode)) {
     return selected;
   }
   for (int i = 0; i < detector_->NumberOfReconstructedHits(); ++i) {
@@ -145,7 +151,7 @@ grams::TPCEventType NanoGRAMSQuickLookWriter::classifyEvent(const std::vector<in
     return grams::TPCEventType::Gamma;
   }
 
-  const bool usesLight = (tpc_events_->config().light_event_selection_mode != grams::LightEventSelectionMode::Disabled);
+  const bool usesLight = (configLoader_->config().light_event_selection_mode != grams::LightEventSelectionMode::Disabled);
   if (usesLight && detector_->isEventFlags(nanograms_event_flag::LightCosmic)) {
     return grams::TPCEventType::Cosmic;
   }
@@ -166,7 +172,7 @@ grams::TPCEventType NanoGRAMSQuickLookWriter::classifyEvent(const std::vector<in
     return grams::TPCEventType::TimeUp;
   }
 
-  if (tpc_events_->config().light_event_selection_mode == grams::LightEventSelectionMode::GammaRequired &&
+  if (configLoader_->config().light_event_selection_mode == grams::LightEventSelectionMode::GammaRequired &&
       !detector_->isEventFlags(nanograms_event_flag::LightGamma)) {
     return grams::TPCEventType::LightNotGamma;
   }

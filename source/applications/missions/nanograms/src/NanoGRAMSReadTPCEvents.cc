@@ -23,16 +23,13 @@
 #include <TTree.h>
 
 #include "AstroUnits.hh"
-#include "GainFunctionCubic.hh"
+
 #include "LightData.hh"
 #include "NanoGRAMSConstants.hh"
-#include "NanoGRAMSMultiChannelData.hh"
-#include "NanoGRAMSTemperatureCorrection.hh"
+
 #include "RealDetectorUnitNanoGRAMS.hh"
 
 #include <algorithm>
-#include <cmath>
-#include <filesystem>
 #include <format>
 #include <iostream>
 #include <stdexcept>
@@ -52,14 +49,10 @@ NanoGRAMSReadTPCEvents::~NanoGRAMSReadTPCEvents() = default;
 
 ANLStatus NanoGRAMSReadTPCEvents::mod_define()
 {
-  define_parameter("config_file", &mod_class::config_file_);
-  define_parameter("dpp_config_file", &mod_class::dpp_config_file_);
   define_parameter("tpctree_files", &mod_class::tpctree_files_);
-  define_parameter("gain_tp_file", &mod_class::gain_tp_file_);
-  define_parameter("gain_tp_hash", &mod_class::gain_tp_dict_);
+
   define_parameter("run_id", &mod_class::run_id_);
-  define_map_key("fec", "0");
-  add_value_element("gain", &mod_class::gain_tp_value_);
+
   return AS_OK;
 }
 
@@ -81,9 +74,13 @@ ANLStatus NanoGRAMSReadTPCEvents::mod_initialize()
   current_raw_event_offset_ = 0;
   current_raw_event_id_ = -1;
 
-  // settings common to all the input files
-  grams::readConfig(cfg_, config_file_);
-  setupCalibration();
+  if (!exist_module("NanoGRAMSLoadConfig")) {
+    std::cerr << "NanoGRAMSLoadConfig not found" << std::endl;
+    return AS_QUIT_ALL_ERROR;
+  }
+
+  get_module_NC("NanoGRAMSLoadConfig", &configLoader_);
+
   selectLightChannels();
 
   openNextTPCFile();
@@ -93,8 +90,9 @@ ANLStatus NanoGRAMSReadTPCEvents::mod_initialize()
 
 void NanoGRAMSReadTPCEvents::selectLightChannels()
 {
+  const auto& cfg = configLoader_->config();
   light_channel_used_.fill(false);
-  for (const auto* channels : {&cfg_.general_analysis_channels, &cfg_.pileup_analysis_channels}) {
+  for (const auto* channels : {&cfg.general_analysis_channels, &cfg.pileup_analysis_channels}) {
     for (const int dppChannel : *channels) {
       light_channel_used_.at(dppChannel) = true;
     }
@@ -105,6 +103,7 @@ bool NanoGRAMSReadTPCEvents::openNextTPCFile()
 {
   tpc_tree_reader_.reset();
   input_file_.reset();
+  auto& cfg = configLoader_->config();
 
   while (input_file_index_ < tpctree_files_.size()) {
     const std::string input_path = tpctree_files_[input_file_index_++];
@@ -113,11 +112,8 @@ bool NanoGRAMSReadTPCEvents::openNextTPCFile()
     }
 
     // the light data settings (DPP configuration) can be different for each input file
-    if (dpp_config_file_.empty()) {
-      grams::readDPPConfig(cfg_, input_path);
-    }
-    else {
-      grams::readDPPConfigFile(cfg_, dpp_config_file_);
+    if (!configLoader_->IsDppConfigSet()) {
+      grams::readDPPConfig(cfg, input_path);
     }
 
     auto input_file = std::make_unique<TFile>(input_path.c_str(), "READ");
@@ -147,99 +143,14 @@ bool NanoGRAMSReadTPCEvents::openNextTPCFile()
   return false;
 }
 
-void NanoGRAMSReadTPCEvents::setupCalibration()
-{
-  calibration_config_ = readCalibrationConfig(config_file_);
-  const std::filesystem::path gain_info_path =
-      resolveCalibrationPath(calibration_config_.config_dir, calibration_config_.energy.gain_info_file);
-
-  // ADC2C: gain functions of the MCDs; ccal2ADC: reference test-pulse ADC for the temperature correction
-  std::array<GainMatrix, NUM_VATA> adc2c{};
-  auto temperatureCorrection = std::make_shared<NanoGRAMSTemperatureCorrection>(NUM_VATA);
-  for (int fec = 0; fec < NUM_VATA; ++fec) {
-    adc2c[fec] = loadGainMatrix(gain_info_path, std::format("/FEC{}/ADC2C", fec));
-    const GainMatrix ccal2adc = loadGainMatrix(gain_info_path, std::format("/FEC{}/ccal2ADC", fec));
-    const double referenceADC = evaluateGainCubic(static_cast<double>(calibration_config_.energy.ccal),
-                                                  ccal2adc.at(calibration_config_.energy.tp_channel));
-    temperatureCorrection->setReferenceADC(fec, referenceADC);
-  }
-
-  if (!gain_tp_file_.empty()) {
-    const std::filesystem::path gain_tp_path = resolveCalibrationPath(calibration_config_.config_dir, gain_tp_file_);
-    for (const TestPulseGainRow& row : readTestPulseGainTable(gain_tp_path)) {
-      for (int fec = 0; fec < NUM_VATA; ++fec) {
-        if (std::isfinite(row.fec_gain[fec])) {
-          temperatureCorrection->addTestPulseADC(fec, row.time, row.fec_gain[fec]);
-        }
-      }
-    }
-    std::cout << "[NanoGRAMSReadTPCEvents] gain_tp_file for temperature correction: " << gain_tp_path << std::endl;
-  }
-  else if (!gain_tp_dict_.empty()) {
-    const std::array<double, NUM_VATA> fixed = fixedTestPulseGainsFromHash(gain_tp_dict_);
-    for (int fec = 0; fec < NUM_VATA; ++fec) {
-      temperatureCorrection->setFixedTestPulseADC(fec, fixed[fec]);
-    }
-    std::cout << "[NanoGRAMSReadTPCEvents] gain_tp_hash for temperature correction." << std::endl;
-  }
-  else {
-    std::cout << "[NanoGRAMSReadTPCEvents] WARNING: no gain_tp_file/hash. "
-              << "Temperature correction factors are 1." << std::endl;
-  }
-
-  setupDetectorParameters(adc2c, temperatureCorrection);
-}
-
-void NanoGRAMSReadTPCEvents::setupDetectorParameters(
-    const std::array<GainMatrix, NUM_VATA>& adc2c,
-    const std::shared_ptr<const NanoGRAMSTemperatureCorrection>& temperatureCorrection)
-{
-  DetectorSystem* detectorManager = getDetectorManager();
-  if (detectorManager == nullptr) {
-    return;
-  }
-
-  for (auto& detector : detectorManager->getDetectors()) {
-    if (!detector->checkType(DetectorType::NanoGRAMS)) {
-      continue;
-    }
-    // always RealDetectorUnitNanoGRAMS
-    auto* nanograms = static_cast<RealDetectorUnitNanoGRAMS*>(detector.get());
-    nanograms->setMaxDriftTime(calibration_config_.energy.max_time);
-    nanograms->setElectricField(calibration_config_.general.efield);
-    nanograms->setTemperatureCorrection(temperatureCorrection);
-
-    // cluster selection (the thresholds in the yaml override those in the detector parameters XML;
-    // the clustering range is given by the XML). The energies are compared with the charge-equivalent
-    // EPI for selection (charge x W_ion).
-    nanograms->setClusteringEnergyThreshold(cfg_.core_noise_energy_th);
-    nanograms->setClusteringSplitThreshold(cfg_.spread_thr_energy);
-    nanograms->setCrossFECMergeDriftTimeTolerance(cfg_.cross_fec_merge_drift_time_tolerance);
-    nanograms->setDriftTimeLimit(cfg_.drift_time_max);
-    nanograms->setClusterPixelCountRange(cfg_.pix_min, cfg_.pix_max);
-    for (const auto& [fec, channels] : cfg_.core_exclude_pix) {
-      nanograms->setExcludedCorePixels(fec, channels);
-    }
-
-    for (int fec = 0; fec < NUM_VATA; ++fec) {
-      NanoGRAMSMultiChannelData* mcd = nanograms->getNanoGRAMSMultiChannelData(fec);
-      for (int ch = 0; ch < NUM_CH_EACH_VATA; ++ch) {
-        // the gain matrix holds cubic parameters from the highest order: p0*x^3 + p1*x^2 + p2*x + p3
-        const GainParamArray& p = adc2c[fec][ch];
-        mcd->setGainFunction(ch, std::make_shared<GainFunctionCubic>(p[3], p[2], p[1], p[0]));
-      }
-      // the threshold is compared with the charge-equivalent selection EPI (charge x W_ion)
-      mcd->setHitThresholdEnergy(cfg_.spread_thr_energy);
-    }
-  }
-}
-
 void NanoGRAMSReadTPCEvents::fillEventsIntoDetectors()
 {
   DetectorSystem* detectorManager = getDetectorManager();
   if (detectorManager == nullptr) {
     return;
   }
+
+  const auto& cfg = configLoader_->config();
 
   const grams::TPCTreeBuffer& buffer = tpc_tree_reader_->currentBuffer();
   const int waveformLength = buffer.layout().waveform_len;
@@ -264,7 +175,7 @@ void NanoGRAMSReadTPCEvents::fillEventsIntoDetectors()
 
     // light waveforms (index of light data = DPP channel):
     // RawWaveform = digitizer ADC converted into voltage; Waveform is initialized with it and corrected later
-    const double adcToVoltage = cfg_.adc2mv * (unit::volt / 1000.0);
+    const double adcToVoltage = cfg.adc2mv * (unit::volt / 1000.0);
     for (int dppChannel = 0; dppChannel < nanograms->NumberOfLightData(); ++dppChannel) {
       const int slot = buffer.waveformSlotForDPPChannel(dppChannel);
       if (slot < 0 || !light_channel_used_[dppChannel]) {
@@ -286,6 +197,7 @@ void NanoGRAMSReadTPCEvents::setupLightDataLayout()
   if (detectorManager == nullptr) {
     return;
   }
+  const auto& cfg = configLoader_->config();
 
   // the layout is taken from the first entry of the file (the same as the light timing of TPCTreeReader)
   const grams::TPCTreeBuffer& buffer = tpc_tree_reader_->currentBuffer();
@@ -295,8 +207,8 @@ void NanoGRAMSReadTPCEvents::setupLightDataLayout()
       continue;
     }
     auto* nanograms = static_cast<RealDetectorUnitNanoGRAMS*>(detector.get());
-    std::cout << "[NanoGRAMSReadTPCEvents] light data (detector " << nanograms->getID()
-              << ", " << nanograms->NumberOfLightData() << " channels, waveform length " << waveformLength << ")\n";
+    std::cout << "[NanoGRAMSReadTPCEvents] light data (detector " << nanograms->getID() << ", "
+              << nanograms->NumberOfLightData() << " channels, waveform length " << waveformLength << ")\n";
     for (int dppChannel = 0; dppChannel < nanograms->NumberOfLightData(); ++dppChannel) {
       const bool registered = (buffer.waveformSlotForDPPChannel(dppChannel) >= 0);
       const bool valid = (registered && light_channel_used_[dppChannel]);
@@ -309,7 +221,7 @@ void NanoGRAMSReadTPCEvents::setupLightDataLayout()
       }
       const double timeWidth = static_cast<double>(buffer.wave_compress[dppChannel]) * unit::ns;
       // time = 0 at the trigger
-      const double triggerDelay = static_cast<double>(cfg_.light_delay_counts[dppChannel]) * 8.0 * timeWidth;
+      const double triggerDelay = static_cast<double>(cfg.light_delay_counts[dppChannel]) * 8.0 * timeWidth;
       nanograms->getLightData(dppChannel)->setLayout(waveformLength, timeWidth, -triggerDelay);
       std::cout << " time_width=" << timeWidth / unit::ns << " ns"
                 << " time_start=" << -triggerDelay / unit::us << " us\n";

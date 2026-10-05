@@ -29,6 +29,7 @@ namespace comptonsoft {
 class LightData;
 class RealDetectorUnitNanoGRAMS;
 class NanoGRAMSReadTPCEvents;
+class NanoGRAMSLoadConfig;
 namespace grams {
 struct Config;
 }
@@ -79,6 +80,7 @@ private:
 private:
   const NanoGRAMSReadTPCEvents* reader_ = nullptr;
   const grams::Config* config_ = nullptr;
+  const NanoGRAMSLoadConfig* configLoader_ = nullptr;
 };
 
 } /* namespace comptonsoft */

@@ -28,13 +28,16 @@ class NanoGRAMSDataReduction < ANL::ANLApp
     with_parameters(detector_configuration: "database/detector_configuration_nanograms.xml",
                     detector_parameters: "database/detector_parameters_nanograms.xml")
 
+    # yaml configuration, calibration and detector parameters (must be chained before the modules using them)
+    chain :NanoGRAMSLoadConfig
+    with_parameters(config_file: @config_file,
+                    dpp_config_file: @dpp_config_file,
+                    gain_tp_file: @gain_tp_file)
+
     # read tpctree: raw ADC, TI, drift time, unixtime -> MCD/unit; light waveforms -> LightData
     # (events with TPC error flags are skipped here)
     chain :NanoGRAMSReadTPCEvents
-    with_parameters(config_file: @config_file,
-                    dpp_config_file: @dpp_config_file,
-                    tpctree_files: @tpctree_files,
-                    gain_tp_file: @gain_tp_file,
+    with_parameters(tpctree_files: @tpctree_files,
                     run_id: @run_id)
 
     # light: waveform corrections (light.pedestal_correction etc. in the yaml),

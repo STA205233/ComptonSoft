@@ -264,6 +264,7 @@ set(ComptonSoftApplications_Missions_NanoGRAMS_Modules
   missions/nanograms/src/NanoGRAMSCorrectLightWaveform.cc
   missions/nanograms/src/NanoGRAMSAnalyzeLight.cc
   missions/nanograms/src/NanoGRAMSSelectEvents.cc
+  missions/nanograms/src/NanoGRAMSLoadConfig.cc
 )
 
 target_sources(ComptonSoftApplications

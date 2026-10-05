@@ -27,6 +27,7 @@
 #include "LightData.hh"
 #include "NanoGRAMSConfig.hh"
 #include "NanoGRAMSLightWaveformCorrection.hh"
+#include "NanoGRAMSLoadConfig.hh"
 #include "NanoGRAMSReadTPCEvents.hh"
 #include "RealDetectorUnitNanoGRAMS.hh"
 
@@ -47,8 +48,10 @@ ANLStatus NanoGRAMSCorrectLightWaveform::mod_initialize()
   }
 
   const NanoGRAMSReadTPCEvents* reader = nullptr;
+  const NanoGRAMSLoadConfig* configLoader = nullptr;
   get_module("NanoGRAMSReadTPCEvents", &reader);
-  config_ = &reader->config();
+  get_module("NanoGRAMSLoadConfig", &configLoader);
+  config_ = &configLoader->config();
   return AS_OK;
 }
 
@@ -91,9 +94,8 @@ ANLStatus NanoGRAMSCorrectLightWaveform::mod_analyze()
           }
         }
         else {
-          const grams::PedestalCorrectionResult result =
-              grams::correctPedestal(waveform, cfg.light_pedestal_range_min * adcToVoltage,
-                                     cfg.light_pedestal_range_max * adcToVoltage);
+          const grams::PedestalCorrectionResult result = grams::correctPedestal(
+              waveform, cfg.light_pedestal_range_min * adcToVoltage, cfg.light_pedestal_range_max * adcToVoltage);
           lightData->setPedestal(result.pedestal);
         }
       }

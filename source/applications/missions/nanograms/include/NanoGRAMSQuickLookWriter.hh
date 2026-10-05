@@ -23,6 +23,7 @@ namespace comptonsoft {
 
 class NanoGRAMSReadTPCEvents;
 class RealDetectorUnitNanoGRAMS;
+class NanoGRAMSLoadConfig;
 
 /**
  * Writes the quicklook tree of the NanoGRAMS detector unit.
@@ -62,6 +63,7 @@ private:
 
   const NanoGRAMSReadTPCEvents* tpc_events_ = nullptr;
   const RealDetectorUnitNanoGRAMS* detector_ = nullptr;
+  const NanoGRAMSLoadConfig* configLoader_ = nullptr;
   std::unique_ptr<grams::QuickLookTreeIO> writer_;
 };
 
