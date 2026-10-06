@@ -122,7 +122,9 @@ void QuickLookTreeIO::fillEvent(int64_t raw_event_id, TPCEventType event_type,
 
   for (int dpp_ch = 0; dpp_ch < NUM_CH_DPP_MAX; ++dpp_ch) {
     light_integrated_charge_[dpp_ch] =
-        (dpp_ch < detector.NumberOfLightData()) ? detector.LightIntegratedCharge(dpp_ch) / unit::coulomb : 0.0;
+        (dpp_ch < detector.NumberOfLightData()) ? detector.LightIntegratedCharge(dpp_ch) / unit::eplus : 0.0;
+    light_peak_value_[dpp_ch] =
+        (dpp_ch < detector.NumberOfLightData()) ? detector.LightPeakValue(dpp_ch) / unit::volt * 1000.0 : 0.0;
     wave_compress_[dpp_ch] = 0;
     if (dpp_ch < detector.NumberOfLightData() && detector.getLightData(dpp_ch)->isValid()) {
       wave_compress_[dpp_ch] =
@@ -204,6 +206,7 @@ void QuickLookTreeIO::bindBranches()
   drift_leaflist_ = std::format("drift_time[{}]/i", NUM_VATA);
   wave_compress_leaflist_ = std::format("wave_compress[{}]/s", NUM_CH_DPP_MAX);
   light_integrated_charge_leaflist_ = std::format("light_integrated_charge[{}]/D", NUM_CH_DPP_MAX);
+  light_peak_value_leaflist_ = std::format("light_peak_value[{}]/D", NUM_CH_DPP_MAX);
 
   quicklook_tree_->Branch("raw_event_id", &raw_event_id_, "raw_event_id/L");
   quicklook_tree_->Branch("event_type", &event_type_, "event_type/S");
@@ -216,6 +219,7 @@ void QuickLookTreeIO::bindBranches()
   quicklook_tree_->Branch("wave_compress", wave_compress_.data(), wave_compress_leaflist_.c_str());
   quicklook_tree_->Branch("light_integrated_charge", light_integrated_charge_.data(),
                           light_integrated_charge_leaflist_.c_str());
+  quicklook_tree_->Branch("light_peak_value", light_peak_value_.data(), light_peak_value_leaflist_.c_str());
   if (save_waveforms_) {
     waveform_dpp_ch_leaflist_ = std::format("waveform_dpp_ch[{}]/S", waveform_num_channels_);
     waveform_leaflist_ = std::format("waveform[{}][{}]/F", waveform_num_channels_, waveform_len_);
@@ -261,6 +265,7 @@ void QuickLookTreeIO::setBranchAddresses()
   quicklook_tree_->SetBranchAddress("drift_time", &drift_time_);
   quicklook_tree_->SetBranchAddress("wave_compress", wave_compress_.data());
   quicklook_tree_->SetBranchAddress("light_integrated_charge", light_integrated_charge_.data());
+  quicklook_tree_->SetBranchAddress("light_peak_value", light_peak_value_.data());
   if (quicklook_tree_->FindBranch("waveform_dpp_ch")) {
     quicklook_tree_->SetBranchAddress("waveform_len", &waveform_len_branch_);
     quicklook_tree_->SetBranchAddress("waveform_num_channels", &waveform_num_channels_branch_);

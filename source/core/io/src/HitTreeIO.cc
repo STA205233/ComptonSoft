@@ -187,8 +187,8 @@ void HitTreeIO::fillHits(const int32_t runID,
     pha_ = hit->PHA();
     epi_ = hit->EPI() / unit::keV;
     epi_error_ = hit->EPIError() / unit::keV;
-    light_pha_ = hit->LightPHA();
-    light_pha_error_ = hit->LightPHAError();
+    light_pha_ = hit->LightPHA() / unit::eplus; // photonelectron
+    light_pha_error_ = hit->LightPHAError() / unit::eplus;
     photon_count_ = hit->PhotonCount();
     photon_count_error_ = hit->PhotonCountError();
     flag_data_ = hit->FlagData();

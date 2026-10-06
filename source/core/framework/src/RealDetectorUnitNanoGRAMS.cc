@@ -15,6 +15,7 @@ RealDetectorUnitNanoGRAMS::RealDetectorUnitNanoGRAMS()
   : unixTime_(0u),
     eventFlags_(0u),
     lightIntegratedCharge_(NumLightChannels, 0.0),
+    lightPeakValue_(NumLightChannels, 0.0),
     lightPHA_(0.0),
     maxDriftTime_(67.0 * CLHEP::us),
     electricField_(0.0),
@@ -72,6 +73,7 @@ void RealDetectorUnitNanoGRAMS::initializeEvent()
   unixTime_ = 0u;
   eventFlags_ = 0u;
   std::fill(lightIntegratedCharge_.begin(), lightIntegratedCharge_.end(), 0.0);
+  std::fill(lightPeakValue_.begin(), lightPeakValue_.end(), 0.0);
   lightPHA_ = 0.0;
   clusterCorrespondence_.clear();
 

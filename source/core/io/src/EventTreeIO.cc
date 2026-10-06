@@ -169,8 +169,8 @@ void EventTreeIO::fillHits(const int32_t runID,
     rawpha_[i] = hit->RawPHA();
     pha_[i] = hit->PHA();
     epi_[i] = hit->EPI() / unit::keV;
-    light_pha_[i] = hit->LightPHA();
-    light_pha_error_[i] = hit->LightPHAError();
+    light_pha_[i] = hit->LightPHA() / unit::eplus;
+    light_pha_error_[i] = hit->LightPHAError() / unit::eplus;
     photon_count_[i] = hit->PhotonCount();
     photon_count_error_[i] = hit->PhotonCountError();
     trackid_[i] = hit->TrackID();

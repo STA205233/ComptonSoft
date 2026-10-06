@@ -20,8 +20,8 @@
 #ifndef COMPTONSOFT_HitTreeIO_H
 #define COMPTONSOFT_HitTreeIO_H 1
 
-#include <cstdint>
 #include "DetectorHit_sptr.hh"
+#include <cstdint>
 
 class TTree;
 
@@ -44,22 +44,19 @@ public:
   HitTreeIO();
   virtual ~HitTreeIO();
 
-  virtual void set_tree(TTree* tree)
-  { hittree_ = tree; }
+  virtual void set_tree(TTree* tree) { hittree_ = tree; }
 
   virtual void define_branches();
   virtual void set_branch_addresses();
 
   void fillHits(int32_t runID, int32_t eventID, const std::vector<DetectorHit_sptr>& hits);
-  void fillHits(const std::vector<DetectorHit_sptr>& hits)
-  { fillHits(-1, -1, hits); }
+  void fillHits(const std::vector<DetectorHit_sptr>& hits) { fillHits(-1, -1, hits); }
 
   int32_t getRunID() const { return runid_; }
   int32_t getEventID() const { return eventid_; }
   int32_t getNumberOfHits() const { return num_hits_; }
   DetectorHit_sptr retrieveHit() const;
-  std::vector<DetectorHit_sptr> retrieveHits(int64_t& entry,
-                                             bool get_first_entry=true);
+  std::vector<DetectorHit_sptr> retrieveHits(int64_t& entry, bool get_first_entry = true);
 
 private:
   TTree* hittree_;

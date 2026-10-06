@@ -120,6 +120,10 @@ public:
   double LightIntegratedCharge(int dppChannel) const { return lightIntegratedCharge_.at(dppChannel); }
   const std::vector<double>& LightIntegratedCharges() const { return lightIntegratedCharge_; }
 
+  void setLightPeakValue(int dppChannel, double v) { lightPeakValue_.at(dppChannel) = v; }
+  double LightPeakValue(int dppChannel) const { return lightPeakValue_.at(dppChannel); }
+  const std::vector<double>& LightPeakValue() const { return lightPeakValue_; }
+
   // light signal size of the event (raw, pre-calibration; charge summed over the general analysis channels,
   // impedance-corrected and converted to an electron count), shared by all the hits of this detector
   // (set to the hits in selectHits())
@@ -193,6 +197,7 @@ private:
   uint32_t unixTime_;
   uint64_t eventFlags_;
   std::vector<double> lightIntegratedCharge_;
+  std::vector<double> lightPeakValue_;
   double lightPHA_;
   double photonCount_;
   double maxDriftTime_;

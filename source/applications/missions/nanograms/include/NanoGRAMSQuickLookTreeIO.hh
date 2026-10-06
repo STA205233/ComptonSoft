@@ -134,6 +134,7 @@ private:
   std::string drift_leaflist_;
   std::string wave_compress_leaflist_;
   std::string light_integrated_charge_leaflist_;
+  std::string light_peak_value_leaflist_;
   std::string waveform_dpp_ch_leaflist_;
   std::string waveform_leaflist_;
 
@@ -149,10 +150,11 @@ private:
   std::array<uint32_t, NUM_VATA> drift_time_{};
   std::array<uint16_t, NUM_CH_DPP_MAX> wave_compress_{};
   std::array<double, NUM_CH_DPP_MAX> light_integrated_charge_{};
+  std::array<double, NUM_CH_DPP_MAX> light_peak_value_{};
   std::vector<int16_t> waveform_dpp_ch_;
   std::vector<float> waveform_;
-  ClusterBranches hit_;      // selected clusters
-  ClusterBranches rej_hit_;  // rejected clusters
+  ClusterBranches hit_;     // selected clusters
+  ClusterBranches rej_hit_; // rejected clusters
   std::vector<uint32_t> rej_cluster_type_;
 };
 

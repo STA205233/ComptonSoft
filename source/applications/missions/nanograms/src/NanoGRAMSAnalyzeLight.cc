@@ -81,17 +81,19 @@ ANLStatus NanoGRAMSAnalyzeLight::mod_analyze()
         nanograms->addEventFlags(nanograms_event_flag::LightCosmic);
       }
     }
-    // integrated charges; their sum over the general analysis channels is the light PHA of the event
+    // integrated charges&peak search; their sum over the general analysis channels is the light PHA of the event
     double lightPHA = 0.0;
     for (const int dppChannel : generalChannels) {
       const double charge =
           integratedROICharge(*nanograms->getLightData(dppChannel)) * cfg.light_gain_correction[dppChannel];
       nanograms->setLightIntegratedCharge(dppChannel, charge);
+      const LightData::range_t roi_range = {-cfg.pre_roi_window, cfg.post_roi_window};
+      const double peak = nanograms->getLightData(dppChannel)->peak(roi_range);
+      nanograms->setLightPeakValue(dppChannel, peak);
       if (std::isfinite(charge)) {
         lightPHA += charge;
       }
     }
-    lightPHA /= CLHEP::eplus; // convert the charge into an electron count (raw, pre-calibration)
     nanograms->setLightPHA(lightPHA);
     const double gain = cfg.light_gain_mode == grams::LightGainMode::Direct ? 1.0 : 1.0 / cfg.sipm_gain;
     nanograms->setPhotonCount(lightPHA * gain); // calibrate into the actual photon count with the SiPM gain
