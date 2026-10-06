@@ -2,69 +2,72 @@
 
 require 'comptonsoft'
 
-class MyAppDataReduction < ANL::ANLApp
-  attr_accessor :tpc_tree_file, :hittree_file
-  attr_accessor :quicklook_file
-  attr_accessor :gain_tp_file, :gain_tp_hash
-  attr_accessor :gain_cache_seconds
-  attr_accessor :light_waveform_display_file
+class NanoGRAMSDataReduction < ANL::ANLApp
+  attr_accessor :config_file, :dpp_config_file, :tpc_tree_file
+  attr_accessor :gain_tp_file, :run_id
+  attr_accessor :hittree_file, :quicklook_file
 
   def setup
     add_namespace ComptonSoft
+    puts @config_file
+    puts @dpp_config_file
+    puts @tpc_tree_file
+    puts @gain_tp_file
+    puts  @run_id
+    puts @hittree_file
+    puts @quicklook_file
 
     chain :CSHitCollection
-    chain :NanoGRAMSLightWaveformStore
-    chain :NanoGRAMSHitExtraction
-    extraction_parameters = {
-      config_file:     "metadata/config_pipeline.yaml",
-      tpctree_file:    @tpc_tree_file,
-    }
-    extraction_parameters[:quicklook_file] = @quicklook_file if @quicklook_file
-    with_parameters(**extraction_parameters)
-    
-  
-    chain :NanoGRAMSMakeLightWaveform
-    with_parameters(hit_extraction_module_name:       "NanoGRAMSHitExtraction",
-                    light_waveform_store_module_name: "NanoGRAMSLightWaveformStore",
-                    range_min_us:                      0.0,
-                    range_max_us:                      0.0)
+    chain :ConstructDetector
+    with_parameters(detector_configuration: "database/detector_configuration.xml",
+                    detector_parameters: "database/detector_parameters.xml")
+                    
+    # yaml configuration, calibration and detector parameters (must be chained before the modules using them)
+    chain :NanoGRAMSLoadConfig
+    with_parameters(config_file: @config_file,
+                    dpp_config_file: @dpp_config_file,
+                    gain_tp_file: @gain_tp_file)
 
-    #chain :NanoGRAMSCorrectPedestal
-    #with_parameters(config_file:                      "metadata/config_pipeline.yaml",
-    #                 light_waveform_store_module_name: "NanoGRAMSLightWaveformStore",
-    #                 pedestal_range_min:               -100.0,
-    #                 pedestal_range_max:               0.0)
 
-    #chain :NanoGRAMSCorrectDigitizerOffset
-    #with_parameters(config_file:                      "metadata/config_pipeline.yaml",
-    #                 light_waveform_store_module_name: "NanoGRAMSLightWaveformStore",
-    #                 range_start_index:                0,
-    #                 range_stop_index:                 100)
+    # read tpctree: raw ADC, TI, drift time, unixtime -> MCD/unit; light waveforms -> LightData
+    # (events with TPC error flags are skipped here)
+    chain :NanoGRAMSReadTPCEvents
+    with_parameters(
+                    tpctree_files: @tpc_tree_file,
+                    run_id: @run_id)
 
-    #chain :NanoGRAMSApplyLightFFTFilter
-    #with_parameters(config_file:                      "metadata/config_pipeline.yaml",
-    #                 light_waveform_store_module_name: "NanoGRAMSLightWaveformStore",
-    #                 low_frequency:                    0.0,
-    #                 high_frequency:                   0.1)
+    # light: waveform corrections (light.pedestal_correction etc. in the yaml),
+    # then judgement (LightGamma/Cosmic/Pileup) and the integrated charge (photon count)
+    chain :NanoGRAMSCorrectLightWaveform
+    chain :NanoGRAMSAnalyzeLight
 
-    if @light_waveform_display_file
-      chain :NanoGRAMSWriteLightWaveform
-      with_parameters(config_file:                      "metadata/config_pipeline.yaml",
-                       light_waveform_store_module_name: "NanoGRAMSLightWaveformStore",
-                       period:                           100,
-                       max_saved_events:                 10000)
-      chain :SaveData
-      with_parameters(output: @light_waveform_display_file)
+    # charge: CMN (median; lower mean for selection) -> temperature correction -> EPI (charge x W_ion)
+    chain :CorrectPHA
+    with_parameters(pedestal_level: "0",
+                    CMN_estimation: 2,
+                    gain_function: "1")
+
+    # hits, clustering, flags, recombination correction (the thresholds are given by the yaml)
+    chain :SelectHits
+    with_parameters(analysis_map: {
+                     "NanoGRAMS" => [7, 4, 0.0, 0.0, 0.0]
+                    })
+
+    # quicklook of all the events (before the selection)
+    if @quicklook_file
+      chain :NanoGRAMSQuickLookWriter
+      with_parameters(quicklook_file: @quicklook_file,
+                      event_types: ["gamma", "other", "cosmic", "pileup", "timeup",
+                                      "excluded", "nocluster", "lightnotgamma",
+                                      "rej_pixelcount", "rej_collinear", "rej_multicluster", "rej_timeup"],
+                      num_hits: -1,
+                      save_waveforms: false)
     end
 
-    chain :NanoGRAMSCalibration
-    calibration_parameters = {}
-    calibration_parameters[:gain_tp_hash] = @gain_tp_hash if @gain_tp_hash
-    calibration_parameters[:gain_tp_file] = @gain_tp_file if @gain_tp_file
-    calibration_parameters[:gain_cache_seconds] = @gain_cache_seconds if @gain_cache_seconds
-    with_parameters(**calibration_parameters)
-
+    # selection of gamma-ray events (the other events are skipped)
+    chain :NanoGRAMSSelectEvents
     chain :WriteHitTree
+
     chain :SaveData
     with_parameters(output: @hittree_file)
   end

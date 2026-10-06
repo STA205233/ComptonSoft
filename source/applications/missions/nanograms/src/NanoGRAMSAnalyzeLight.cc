@@ -88,7 +88,8 @@ ANLStatus NanoGRAMSAnalyzeLight::mod_analyze()
           integratedROICharge(*nanograms->getLightData(dppChannel)) * cfg.light_gain_correction[dppChannel];
       nanograms->setLightIntegratedCharge(dppChannel, charge);
       const LightData::range_t roi_range = {-cfg.pre_roi_window, cfg.post_roi_window};
-      const double peak = nanograms->getLightData(dppChannel)->peak(roi_range);
+      const double peak =
+          nanograms->getLightData(dppChannel)->peak(roi_range); // This is deplicated the process above. But I stay it.
       nanograms->setLightPeakValue(dppChannel, peak);
       if (std::isfinite(charge)) {
         lightPHA += charge;
@@ -135,11 +136,11 @@ double NanoGRAMSAnalyzeLight::integratedROICharge(const LightData& lightData) co
   const double digitizerIntegral = lightData.integral(ROI) - baseline * numSamples * lightData.TimeWidth();
 
   // digitizer voltage -> output voltage of the transimpedance amplifier -> input current
-  const double outputVoltageScale = cfg.light_gain_mode == grams::LightGainMode::Direct
-                                        ? 1.0 / cfg.light_direct_gain // If direct gain mode, it converts to light count
-                                        : (cfg.light_output_impedance_ohm + DigitizerInputImpedance) /
-                                              DigitizerInputImpedance /
-                                              cfg.light_transimpedance_feedback_resistance_ohm;
+  const double outputVoltageScale =
+      cfg.light_gain_mode == grams::LightGainMode::Direct
+          ? 1.0 / cfg.light_direct_gain // If direct gain mode, it converts to light count directly
+          : (cfg.light_output_impedance_ohm + DigitizerInputImpedance) / DigitizerInputImpedance /
+                cfg.light_transimpedance_feedback_resistance_ohm; // otherwise, it outputs the input current of TIA.
   return digitizerIntegral * outputVoltageScale;
 }
 
