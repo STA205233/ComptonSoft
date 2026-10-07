@@ -43,8 +43,7 @@ charge:
     cross_fec_merge_drift_time_tolerance_us: 1.0
 calibration: 
     energy: 
-        gain_info_file: /Users/shotaarai/Documents/DataAnalysis/nanoGRAMS/run11/pipeline/subproducts/gainFuncParam3d.hdf5
-        q_to_kev_spline_file: /Users/shotaarai/software/nanograms-analysis-takashima/utility/QvsEkeV_spline.root
+        gain_info_file: gainFuncParam3d.hdf5
         max_time_us: 66
         tp_channel: 17
         ccal: 8
