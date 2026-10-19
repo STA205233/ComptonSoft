@@ -1,6 +1,7 @@
 #ifndef DppListDataDefinition_hh
 #define DppListDataDefinition_hh 1
 #include "DppParameters.hh"
+#include <cstdint>
 #include <deque>
 #include <vector>
 namespace ngUtil {
