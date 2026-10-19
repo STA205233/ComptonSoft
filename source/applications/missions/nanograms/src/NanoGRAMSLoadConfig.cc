@@ -5,9 +5,9 @@
 #include "NanoGRAMSMultiChannelData.hh"
 #include "NanoGRAMSTemperatureCorrection.hh"
 #include "RealDetectorUnitNanoGRAMS.hh"
+#include "boost/format.hpp"
 #include <cmath>
 #include <filesystem>
-#include <format>
 #include <iostream>
 
 using namespace anlnext;
@@ -49,8 +49,8 @@ void NanoGRAMSLoadConfig::setupCalibration()
   std::array<GainMatrix, NUM_VATA> adc2c{};
   auto temperatureCorrection = std::make_shared<NanoGRAMSTemperatureCorrection>(NUM_VATA);
   for (int fec = 0; fec < NUM_VATA; ++fec) {
-    adc2c[fec] = loadGainMatrix(gain_info_path, std::format("/FEC{}/ADC2C", fec));
-    const GainMatrix ccal2adc = loadGainMatrix(gain_info_path, std::format("/FEC{}/ccal2ADC", fec));
+    adc2c[fec] = loadGainMatrix(gain_info_path, (boost::format("/FEC%1%/ADC2C") % fec).str());
+    const GainMatrix ccal2adc = loadGainMatrix(gain_info_path, (boost::format("/FEC%1%/ccal2ADC") % fec).str());
     const double referenceADC = evaluateGainCubic(static_cast<double>(calibration_config_.energy.ccal),
                                                   ccal2adc.at(calibration_config_.energy.tp_channel));
     temperatureCorrection->setReferenceADC(fec, referenceADC);

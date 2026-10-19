@@ -29,8 +29,8 @@
 
 #include "RealDetectorUnitNanoGRAMS.hh"
 
+#include "boost/format.hpp"
 #include <algorithm>
-#include <format>
 #include <iostream>
 #include <stdexcept>
 
@@ -122,7 +122,7 @@ bool NanoGRAMSReadTPCEvents::openNextTPCFile()
     }
     TTree* tpc_tree = dynamic_cast<TTree*>(input_file->Get(grams::kTpcTreeName));
     if (!tpc_tree) {
-      throw std::runtime_error(std::format("Missing TTree '{}' in {}", grams::kTpcTreeName, input_path));
+      throw std::runtime_error((boost::format("Missing TTree '%1%' in %2%") % grams::kTpcTreeName % input_path).str());
     }
 
     const int64_t entries = static_cast<int64_t>(tpc_tree->GetEntries());

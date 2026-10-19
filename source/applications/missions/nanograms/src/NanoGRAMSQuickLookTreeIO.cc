@@ -19,12 +19,12 @@
 #include <TFile.h>
 #include <TTree.h>
 
+#include "boost/format.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <format>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -199,14 +199,14 @@ std::string QuickLookTreeIO::close()
 
 void QuickLookTreeIO::bindBranches()
 {
-  adu_leaflist_ = std::format("adu_cmn_sub[{}][{}]/F", NUM_VATA, NUM_CH_EACH_VATA);
-  energy_leaflist_ = std::format("energy_cmn_sub[{}][{}]/F", NUM_VATA, NUM_CH_EACH_VATA);
-  cmn_leaflist_ = std::format("cmn[{}]/F", NUM_VATA);
-  ti_leaflist_ = std::format("ti[{}]/i", NUM_VATA);
-  drift_leaflist_ = std::format("drift_time[{}]/i", NUM_VATA);
-  wave_compress_leaflist_ = std::format("wave_compress[{}]/s", NUM_CH_DPP_MAX);
-  light_integrated_charge_leaflist_ = std::format("light_integrated_charge[{}]/D", NUM_CH_DPP_MAX);
-  light_peak_value_leaflist_ = std::format("light_peak_value[{}]/D", NUM_CH_DPP_MAX);
+  adu_leaflist_ = (boost::format("adu_cmn_sub[%1%][%2%]/F") % NUM_VATA % NUM_CH_EACH_VATA).str();
+  energy_leaflist_ = (boost::format("energy_cmn_sub[%1%][%2%]/F") % NUM_VATA % NUM_CH_EACH_VATA).str();
+  cmn_leaflist_ = (boost::format("cmn[%1%]/F") % NUM_VATA).str();
+  ti_leaflist_ = (boost::format("ti[%1%]/i") % NUM_VATA).str();
+  drift_leaflist_ = (boost::format("drift_time[%1%]/i") % NUM_VATA).str();
+  wave_compress_leaflist_ = (boost::format("wave_compress[%1%]/s") % NUM_CH_DPP_MAX).str();
+  light_integrated_charge_leaflist_ = (boost::format("light_integrated_charge[%1%]/D") % NUM_CH_DPP_MAX).str();
+  light_peak_value_leaflist_ = (boost::format("light_peak_value[%1%]/D") % NUM_CH_DPP_MAX).str();
 
   quicklook_tree_->Branch("raw_event_id", &raw_event_id_, "raw_event_id/L");
   quicklook_tree_->Branch("event_type", &event_type_, "event_type/S");
@@ -221,8 +221,8 @@ void QuickLookTreeIO::bindBranches()
                           light_integrated_charge_leaflist_.c_str());
   quicklook_tree_->Branch("light_peak_value", light_peak_value_.data(), light_peak_value_leaflist_.c_str());
   if (save_waveforms_) {
-    waveform_dpp_ch_leaflist_ = std::format("waveform_dpp_ch[{}]/S", waveform_num_channels_);
-    waveform_leaflist_ = std::format("waveform[{}][{}]/F", waveform_num_channels_, waveform_len_);
+    waveform_dpp_ch_leaflist_ = (boost::format("waveform_dpp_ch[%1%]/S") % waveform_num_channels_).str();
+    waveform_leaflist_ = (boost::format("waveform[%1%][%2%]/F") % waveform_num_channels_ % waveform_len_).str();
     quicklook_tree_->Branch("waveform_len", &waveform_len_branch_, "waveform_len/I");
     quicklook_tree_->Branch("waveform_num_channels", &waveform_num_channels_branch_, "waveform_num_channels/I");
     quicklook_tree_->Branch("waveform_dpp_ch", waveform_dpp_ch_.data(), waveform_dpp_ch_leaflist_.c_str());
