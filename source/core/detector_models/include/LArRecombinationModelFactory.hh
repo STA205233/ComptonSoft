@@ -1,9 +1,10 @@
 #ifndef COMPTONSOFT_LArRecombinationModelFactory_HH
 #define COMPTONSOFT_LArRecombinationModelFactory_HH 1
 #include "VLArRecombinationModel.hh"
-
+#include <memory>
 namespace comptonsoft {
-enum class RecombinationModelType {
+enum class RecombinationModelType
+{
   Birks,
   ModifiedBox,
   None
@@ -14,11 +15,13 @@ enum class RecombinationModelType {
  * @date 2025-10-10
  * @date 2026-07-02 | Shota Arai | Rename
  */
-class LArRecombinationModelFactory {
+class LArRecombinationModelFactory
+{
 public:
-  static std::unique_ptr<VLArRecombinationModel> load(const std::string &filename);
-  static std::unique_ptr<VLArRecombinationModel> create(RecombinationModelType type, const std::map<std::string, double> &params);
+  static std::unique_ptr<VLArRecombinationModel> load(const std::string& filename);
+  static std::unique_ptr<VLArRecombinationModel> create(RecombinationModelType type,
+                                                        const std::map<std::string, double>& params);
 };
 } /* namespace comptonsoft */
 
-#endif //COMPTONSOFT_LArRecombinationModelFactory_HH
+#endif // COMPTONSOFT_LArRecombinationModelFactory_HH

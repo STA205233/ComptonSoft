@@ -7,13 +7,15 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <map>
+#include <memory>
 namespace comptonsoft {
-std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::string const &filename) {
+std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::string const& filename)
+{
   boost::property_tree::ptree pt;
   try {
     read_xml(filename, pt);
   }
-  catch (boost::property_tree::xml_parser_error &ex) {
+  catch (boost::property_tree::xml_parser_error& ex) {
     std::ostringstream message;
     message << "Cannot parse: " << filename << "\n"
             << "xml_parser_error ===> \n"
@@ -34,13 +36,13 @@ std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::
   std::map<std::string, double> params;
   if (parameter_node != boost::none) {
     bool found = false;
-    for (const auto &m: *parameter_node) {
+    for (const auto& m : *parameter_node) {
       if (m.first != "model") continue;
       const auto type_attr = m.second.get_optional<std::string>("<xmlattr>.type");
       if (!type_attr) continue;
       if (*type_attr != *model) continue;
       found = true;
-      for (const auto &p: m.second) {
+      for (const auto& p : m.second) {
         if (p.first != "parameter") continue;
         const auto name_attr = p.second.get_optional<std::string>("<xmlattr>.name");
         const auto value_attr = p.second.get_optional<std::string>("<xmlattr>.value");
@@ -52,7 +54,7 @@ std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::
         try {
           params.insert(std::make_pair(*name_attr, boost::lexical_cast<double>(*value_attr)));
         }
-        catch (boost::bad_lexical_cast &ex) {
+        catch (boost::bad_lexical_cast& ex) {
           std::ostringstream message;
           message << "Error: Invalid parameter value for " << *name_attr << " in " << filename << "\n"
                   << "bad_lexical_cast ===> \n"
@@ -63,7 +65,8 @@ std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::
       break; // stop after the matching model
     }
     if (!found) {
-      std::cout << "Info: Parameters for " << *model << " model is not found in " << filename << ". Use default parameters." << std::endl;
+      std::cout << "Info: Parameters for " << *model << " model is not found in " << filename
+                << ". Use default parameters." << std::endl;
     }
   }
   if (*model == "Birks") {
@@ -82,7 +85,9 @@ std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::load(std::
   }
   return create(type, params);
 }
-std::unique_ptr<VLArRecombinationModel> LArRecombinationModelFactory::create(RecombinationModelType type, const std::map<std::string, double> &params) {
+std::unique_ptr<VLArRecombinationModel>
+LArRecombinationModelFactory::create(RecombinationModelType type, const std::map<std::string, double>& params)
+{
   switch (type) {
   case RecombinationModelType::Birks:
     return std::make_unique<BirksModel>(params);
