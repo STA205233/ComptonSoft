@@ -1,5 +1,8 @@
 %module comptonSoft
 %{
+#ifdef finite
+#undef finite
+#endif
 #include "CSEventStore.hh"
 #include "ConstructDetector.hh"
 #include "ConstructDetectorForSimulation.hh"

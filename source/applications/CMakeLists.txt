@@ -52,6 +52,7 @@ if(CS_USE_ORT)
 endif()
 
 set(ComptonSoftApplications_ComptonCamera_Modules
+  compton_camera/src/AssignTimeWithExpDistribution.cc
   compton_camera/src/EventReconstruction.cc
   compton_camera/src/SelectFullDeposit.cc
   compton_camera/src/ComptonEventFilter.cc
