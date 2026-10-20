@@ -12,6 +12,14 @@
 #include "EventReconstruction.hh"
 #include "WriteComptonEventTree.hh"
 #include "SaveData.hh"
+#include "ConstructDetectorForSimulation.hh"
+#include "SetChannelProperties.hh"
+#include "NanoGRAMSLoadConfig.hh"
+#include "ReadEventTreeAsDetectorHits.hh"
+#include "RecalculateSimulationNoise.hh"
+#include "AnalyzeHits.hh"
+#include "WriteHitTree.hh"
+#include "HitTreeIOWithInitialInfo.hh"
 %}
 
 %import(module="anlnext.anlnextpy") "anlnext/python/anlnextpy.i"
@@ -93,6 +101,55 @@ class SaveData : public anlnext::BasicModule
 public:
   SaveData();
   ~SaveData();
+};
+
+class ConstructDetectorForSimulation : public ConstructDetector
+{
+public:
+  ConstructDetectorForSimulation();
+  ~ConstructDetectorForSimulation();
+};
+
+class SetChannelProperties : public anlnext::BasicModule
+{
+public:
+  SetChannelProperties();
+  ~SetChannelProperties();
+};
+
+class NanoGRAMSLoadConfig : public anlnext::BasicModule
+{
+public:
+  NanoGRAMSLoadConfig();
+  ~NanoGRAMSLoadConfig();
+};
+
+class ReadEventTreeAsDetectorHits : public anlnext::BasicModule
+{
+public:
+  ReadEventTreeAsDetectorHits();
+  ~ReadEventTreeAsDetectorHits();
+};
+
+class RecalculateSimulationNoise : public anlnext::BasicModule
+{
+public:
+  RecalculateSimulationNoise();
+  ~RecalculateSimulationNoise();
+};
+
+class AnalyzeHits : public anlnext::BasicModule
+{
+public:
+  AnalyzeHits();
+  ~AnalyzeHits();
+};
+
+class WriteHitTree : public anlnext::BasicModule
+{
+public:
+  WriteHitTree();
+  ~WriteHitTree();
 };
 
 }
