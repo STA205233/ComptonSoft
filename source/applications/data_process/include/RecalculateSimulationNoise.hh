@@ -36,15 +36,25 @@ class CSHitCollection;
 class RecalculateSimulationNoise : public VCSModule
 {
   DEFINE_ANL_MODULE(RecalculateSimulationNoise, 3.0);
+
 public:
   RecalculateSimulationNoise();
   ~RecalculateSimulationNoise() = default;
 
+  anlnext::ANLStatus mod_define() override;
   anlnext::ANLStatus mod_initialize() override;
   anlnext::ANLStatus mod_analyze() override;
-  
+
 private:
   CSHitCollection* m_HitCollection;
+
+  std::string m_src_str;
+  enum class SOURCE
+  {
+    DetectorHit,
+    SimulatedHit
+  };
+  SOURCE m_src;
 };
 
 } /* namespace comptonsoft */
