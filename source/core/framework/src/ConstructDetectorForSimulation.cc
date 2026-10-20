@@ -21,20 +21,17 @@
 
 #include <iostream>
 
-#include "VRealDetectorUnit.hh"
-#include "DeviceSimulation.hh"
-#include "DetectorSystem.hh"
-#include "VANLGeometry.hh"
 #include "CSEventStore.hh"
+#include "DetectorSystem.hh"
+#include "DeviceSimulation.hh"
+#include "VANLGeometry.hh"
+#include "VRealDetectorUnit.hh"
 
 using namespace anlnext;
 
-namespace comptonsoft
-{
+namespace comptonsoft {
 
-ConstructDetectorForSimulation::ConstructDetectorForSimulation()
-{
-}
+ConstructDetectorForSimulation::ConstructDetectorForSimulation() {}
 
 ConstructDetectorForSimulation::~ConstructDetectorForSimulation() = default;
 
@@ -57,25 +54,28 @@ ANLStatus ConstructDetectorForSimulation::mod_initialize()
 
   DetectorSystem* detectorManager = getDetectorManager();
 
-  anlgeant4::VANLGeometry* geometry_module = nullptr;
-  get_module_NC("VANLGeometry", &geometry_module);
-  detectorManager->registerGeant4SensitiveDetectors(geometry_module);
+  if (exist_module("VANLGeometry")) {
+    anlgeant4::VANLGeometry* geometry_module = nullptr;
+    get_module_NC("VANLGeometry", &geometry_module);
+    detectorManager->registerGeant4SensitiveDetectors(geometry_module);
+  }
 
-  CSEventStore* event_store = nullptr;
-  get_module_NC("CSEventStore", &event_store);
-  detectorManager->setEventStore(event_store);
+  if (exist_module("CSEventStore")) {
+    CSEventStore* event_store = nullptr;
+    get_module_NC("CSEventStore", &event_store);
+    detectorManager->setEventStore(event_store);
+  }
 
   if (VerboseLevel() > 0) {
     std::cout << "\n\n";
     std::cout << "######  Simulation parameters  ######\n\n";
-    for (const auto& ds: detectorManager->getDeviceSimulationVector()) {
+    for (const auto& ds : detectorManager->getDeviceSimulationVector()) {
       std::cout << "****************************************\n\n";
       std::cout << "Detector ID: " << ds->getID() << '\n';
       std::cout << "Name: " << ds->getName() << "\n\n";
       ds->printSimulationParameters(std::cout);
       std::cout << '\n';
-      std::cout << "****************************************\n\n"
-                << std::endl;
+      std::cout << "****************************************\n\n" << std::endl;
     }
   }
 
