@@ -202,6 +202,9 @@ public:
   void setEnergyCharge(double v) { energyCharge_ = v; }
   double EnergyCharge() const { return energyCharge_; }
 
+  void setdEdx(double v) { dedx_ = v; }
+  double dEdx() const { return dedx_; }
+
   void setProcess(uint32_t v) { process_ = v; }
   uint32_t Process() const { return process_; }
   void addProcess(uint32_t f) { process_ |= f; }
@@ -353,6 +356,7 @@ private:
   double energyDeposit_ = 0.0;
   double energyCharge_ = 0.0;
   double kineticEnergy_ = 0.0;
+  double dedx_ = 0.0;
   uint32_t process_ = 0u;
   // trigger information
   double selfTriggeredTime_ = 0.0;

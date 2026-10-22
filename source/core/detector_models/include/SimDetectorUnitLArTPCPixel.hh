@@ -71,7 +71,7 @@ protected:
   int IndexOfTable(const PixelID &pixel) const override;
   int SizeOfTable() const override;
   PixelID TableIndexToPixelID(int index) const override;
-  void checkBranchingGamma();
+  void checkGammaRays();
 
 private:
   void simulatePulseHeights() override;

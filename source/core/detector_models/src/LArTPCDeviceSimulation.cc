@@ -18,6 +18,8 @@
 #include <cfloat>
 #include <cmath>
 #include <iostream>
+#include <map>
+#include <vector>
 
 using namespace anlgeant4::unit;
 namespace comptonsoft {
@@ -67,16 +69,16 @@ void LArTPCDeviceSimulation::printSimulationParameters(std::ostream& os) const
     os << "  Photon efficiency: " << PhotonEfficiency(0, 0, 0) << "\n";
     os << "  Photon noise parameters: param0 = " << PhotonNoiseParam0() << ", param1 = " << PhotonNoiseParam1()
        << ", param2 = " << PhotonNoiseParam2() << "\n";
+    os << "  dEdx mode: "
+       << (dEdxMode() == 0
+               ? "from step information"
+               : (dEdxMode() == 1 ? "from kinetic energy" : (dEdxMode() == 2 ? "from G4EmCalculator" : "unknown")))
+       << "\n";
+    os << "  dEdx spline: " << (dedxSpline_ ? dedxSpline_->GetName() : "not set") << "\n";
   }
   else {
     os << "  No recombination model is set.\n";
   }
-  os << "  dEdx mode: "
-     << (dEdxMode() == 0
-             ? "from step information"
-             : (dEdxMode() == 1 ? "from kinetic energy" : (dEdxMode() == 2 ? "from G4EmCalculator" : "unknown")))
-     << "\n";
-  os << "  dEdx spline: " << (dedxSpline_ ? dedxSpline_->GetName() : "not set") << "\n";
 }
 double LArTPCDeviceSimulation::DiffusionSigmaAnode3D(double z, double& longitudinal, double& transverse)
 {
@@ -111,12 +113,7 @@ double LArTPCDeviceSimulation::DiffusionSigmaCathode(double)
   return 0.0; // hole diffusion is not considered
 }
 
-void LArTPCDeviceSimulation::instantiateRecombinationModel(const std::string& config_filename)
-{
-  recombinationModel_ = LArRecombinationModelFactory::load(config_filename);
-}
-
-void LArTPCDeviceSimulation::applyRecombination(DetectorHit_sptr& hit)
+void LArTPCDeviceSimulation::applyRecombination(DetectorHit_sptr& hit) const
 {
   const double edep = hit->EnergyDeposit();
   if (!recombinationModel_) {
@@ -131,15 +128,16 @@ void LArTPCDeviceSimulation::applyRecombination(DetectorHit_sptr& hit)
     hit->addFlags(flag::RecombinationNotApplied);
     return;
   }
-  auto particle = hit->Particle();
-  auto partDef = G4ParticleTable::GetParticleTable()->FindParticle(particle);
-  if (partDef->GetPDGCharge() == 0) {
-    hit->setPhotonCount(recombinationModel_->lightYield(edep, 1.0) *
-                        PhotonEfficiency(hit->LocalPositionX(), hit->LocalPositionY(), hit->LocalPositionZ()));
-    hit->setEnergyCharge(edep);
-    hit->addFlags(flag::RecombinationNotApplied);
-    return;
-  }
+
+  // auto particle = hit->Particle();
+  // auto partDef = G4ParticleTable::GetParticleTable()->FindParticle(particle);
+  // if (partDef->GetPDGCharge() == 0) {
+  //   hit->setPhotonCount(recombinationModel_->lightYield(edep, 1.0) *
+  //                       PhotonEfficiency(hit->LocalPositionX(), hit->LocalPositionY(), hit->LocalPositionZ()));
+  //   hit->setEnergyCharge(edep);
+  //   hit->addFlags(flag::RecombinationNotApplied);
+  //   return;
+  // }
 
   const double step_length = hit->StepLength();
   const double efield = BiasVoltage() / getThickness();
@@ -160,6 +158,7 @@ void LArTPCDeviceSimulation::applyRecombination(DetectorHit_sptr& hit)
   }
   else if (dEdxMode() == 1 || dEdxMode() == 2) {
     const double dedx = getdEdxFromKineticEnergy(hit);
+    hit->setdEdx(dedx);
     if (dedx <= 0.0) {
       hit->setPhotonCount(recombinationModel_->lightYield(edep, 1.0) *
                           PhotonEfficiency(hit->LocalPositionX(), hit->LocalPositionY(), hit->LocalPositionZ()));
@@ -181,7 +180,7 @@ void LArTPCDeviceSimulation::applyRecombination(DetectorHit_sptr& hit)
   hit->addFlags(flag::RecombinationApplied);
 }
 
-double LArTPCDeviceSimulation::getdEdxFromKineticEnergy(const DetectorHit_sptr& hit) const
+double LArTPCDeviceSimulation::getdEdxFromKineticEnergy(DetectorHit_sptr& hit) const
 {
   const double kineticEnergy = hit->KineticEnergy();
   if (kineticEnergy <= 0.0) {
@@ -242,8 +241,7 @@ double LArTPCDeviceSimulation::getdEdxFromEmCalculator(const DetectorHit_sptr& h
 }
 
 double LArTPCDeviceSimulation::modelLowEnergyLimit(const G4VEnergyLossProcess* process,
-                                                  const G4MaterialCutsCouple* couple,
-                                                  double kineticEnergy)
+                                                   const G4MaterialCutsCouple* couple, double kineticEnergy)
 {
   std::size_t coupleIndex = static_cast<std::size_t>(couple->GetIndex());
   const G4VEmModel* model = process->SelectModelForMaterial(kineticEnergy, coupleIndex);
@@ -306,8 +304,7 @@ void LArTPCDeviceSimulation::printdEdxDiagnostics(const DetectorHit_sptr& hit, d
       cutsTable->GetEnergyCutsVector(idxG4ElectronCut)->at(cutsTable->GetCoupleIndex(couple));
   os << "  electron production cut:                " << electronCutEnergy / keV << " keV\n";
   os << "  restricted ComputeDEDX at low limit:    "
-     << calculator_->ComputeDEDX(std::max(e, lowLimit), particle, processName, material, electronCutEnergy) /
-            (keV / cm)
+     << calculator_->ComputeDEDX(std::max(e, lowLimit), particle, processName, material, electronCutEnergy) / (keV / cm)
      << " keV/cm\n";
   os << "  restricted GetDEDX (table) at E:        " << process->GetDEDX(e, couple) / (keV / cm) << " keV/cm"
      << std::endl;
@@ -335,6 +332,79 @@ void LArTPCDeviceSimulation::makeRawDetectorHits()
     // hit->setdEdx(hit->EnergyDeposit() / hit->StepLength());
     applyRecombination(hit);
     insertDetectorHit(hit);
+  }
+}
+
+void LArTPCDeviceSimulation::calculateEdepStepLengthAverage(const DetectorHitVector& hits)
+{
+  const std::size_t numHits = hits.size();
+  averagedEdepStepLength_.resize(numHits);
+  for (std::size_t i = 0; i < numHits; i++) {
+    averagedEdepStepLength_[i] = std::make_pair(hits[i]->EnergyDeposit(), hits[i]->StepLength());
+  }
+
+  const double windowLength = DedxWindowLength();
+  if (windowLength <= 0.0) {
+    return;
+  }
+
+  std::map<int32_t, std::vector<std::size_t>> hitsByTrack;
+  for (std::size_t i = 0; i < numHits; i++) {
+    const G4ParticleDefinition* partDef = G4ParticleTable::GetParticleTable()->FindParticle(hits[i]->Particle());
+    if (partDef == nullptr || partDef->GetPDGCharge() == 0.0) {
+      continue;
+    }
+    hitsByTrack[hits[i]->TrackID()].push_back(i);
+  }
+
+  std::vector<double> pathBegin;
+  std::vector<double> pathEnd;
+  for (const auto& track : hitsByTrack) {
+    const std::vector<std::size_t>& indices = track.second;
+    const std::size_t numSteps = indices.size();
+
+    pathBegin.resize(numSteps);
+    pathEnd.resize(numSteps);
+    double path = 0.0;
+    for (std::size_t k = 0; k < numSteps; k++) {
+      pathBegin[k] = path;
+      path += std::max(hits[indices[k]]->StepLength(), 0.0);
+      pathEnd[k] = path;
+    }
+    const double trackLength = path;
+
+    std::size_t first = 0;
+    for (std::size_t k = 0; k < numSteps; k++) {
+      const double center = 0.5 * (pathBegin[k] + pathEnd[k]);
+      const double lower = std::max(center - 0.5 * windowLength, 0.0);
+      const double upper = std::min(center + 0.5 * windowLength, trackLength);
+      const double length = upper - lower;
+      if (length <= 0.0) {
+        continue; // keep the step values
+      }
+
+      while (first < numSteps && pathEnd[first] < lower) {
+        first++;
+      }
+
+      double edepSum = 0.0;
+      for (std::size_t j = first; j < numSteps && pathBegin[j] <= upper; j++) {
+        const double edep = hits[indices[j]]->EnergyDeposit();
+        const double stepLength = pathEnd[j] - pathBegin[j];
+        if (stepLength <= 0.0) {
+          if (pathEnd[j] >= lower) {
+            edepSum += edep;
+          }
+          continue;
+        }
+        const double overlap = std::min(pathEnd[j], upper) - std::max(pathBegin[j], lower);
+        if (overlap > 0.0) {
+          edepSum += edep * overlap / stepLength;
+        }
+      }
+
+      averagedEdepStepLength_[indices[k]] = std::make_pair(edepSum, length);
+    }
   }
 }
 } // namespace comptonsoft

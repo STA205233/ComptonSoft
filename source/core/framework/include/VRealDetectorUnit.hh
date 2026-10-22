@@ -174,6 +174,17 @@ public:
   double getZAxisDirectionZ() const override
   { return directionZ_.z(); }
 
+  vector3_t localToGlobal(const vector3_t& local) const
+  {
+    return centerPosition_ + local.x() * directionX_ + local.y() * directionY_ + local.z() * directionZ_;
+  }
+
+  vector3_t globalToLocal(const vector3_t& global) const
+  {
+    const vector3_t d = global - centerPosition_;
+    return vector3_t(d.dot(directionX_), d.dot(directionY_), d.dot(directionZ_));
+  }
+
   /**
    * methods related to multi channel data.
    */

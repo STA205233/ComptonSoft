@@ -1,8 +1,5 @@
 %module comptonSoft
 %{
-#ifdef finite
-#undef finite
-#endif
 #include "CSEventStore.hh"
 #include "ConstructDetector.hh"
 #include "ConstructDetectorForSimulation.hh"
@@ -30,16 +27,12 @@
 #include "ReadDataFile_NB0.hh"
 #include "CorrectPHA.hh"
 #include "RecalculateEPI.hh"
-#include "CorrectRecombination.hh"
-#include "SetEnergy.hh"
-#include "EliminateLowEnergyHits.hh"
 #include "CalculatePedestalLevels.hh"
 #include "InitialConditionFilter.hh"
 #include "WeightByInitialDirection.hh"
 #include "RecalculateSimulationNoise.hh"
 #include "ComptonModeFilter.hh"
 #include "SelectFullDeposit.hh"
-#include "NumHitsInDetectorFilter.hh"
 #include "ComptonEventFilter.hh"
 #include "SelectEventsOnFocalPlane.hh"
 #include "SelectTime.hh"
@@ -68,7 +61,6 @@
 #include "EfficiencyMapSky.hh"
 #include "QuickAnalysisForDSD.hh"
 #include "AssignTime.hh"
-#include "AssignTimeWithExpDistribution.hh"
 #include "DefineFrame.hh"
 #ifdef USE_FITSIO
 #include "MakeFrameFITS.hh"
@@ -198,12 +190,21 @@
 #ifdef USE_FITSIO
 #include "FilterByGoodTimeIntervalsForHXI.hh"
 #endif
+#include "AssignTimeWithExpDistribution.hh"
+#include "CorrectRecombination.hh"
+#include "SetEnergy.hh"
+#include "SetPosition.hh"
+#include "EliminateLowEnergyHits.hh"
+#include "NumHitsInDetectorFilter.hh"
+#include "NanoGRAMSLoadConfig.hh"
 #include "NanoGRAMSReadTPCEvents.hh"
 #include "NanoGRAMSCorrectLightWaveform.hh"
 #include "NanoGRAMSAnalyzeLight.hh"
 #include "NanoGRAMSSelectEvents.hh"
 #include "NanoGRAMSQuickLookWriter.hh"
-#include "NanoGRAMSLoadConfig.hh"
+#include "ApplyCCE.hh"
+#include "ApplyRecombination.hh"
+#include "PushBackToSimulatedHits.hh"
 
 #include "class_list_anlGeant4.hh"
 #include "comptonsoft_basic_classes.hh"
@@ -349,7 +350,7 @@ class EventReconstruction : public VCSModule
 {
 public:
   EventReconstruction();
-  ~EventReconstruction() = default;
+  ~EventReconstruction() override;
 };
 
 
@@ -422,30 +423,6 @@ class CorrectPHA : public VCSModule
 public:
   CorrectPHA();
   ~CorrectPHA();
-};
-
-
-class CorrectRecombination : public VCSModule
-{
-public:
-  CorrectRecombination();
-  ~CorrectRecombination();
-};
-
-
-class SetEnergy : public anlnext::BasicModule
-{
-public:
-  SetEnergy();
-  ~SetEnergy();
-};
-
-
-class EliminateLowEnergyHits: public anlnext::BasicModule
-{
-public:
-  EliminateLowEnergyHits();
-  ~EliminateLowEnergyHits();
 };
 
 
@@ -635,7 +612,7 @@ public:
 class HistogramEnergySpectrum : public VCSModule
 {
 public:
-  HistogramEnergySpectrum();  
+  HistogramEnergySpectrum();
   ~HistogramEnergySpectrum() = default;
 };
 
@@ -733,13 +710,6 @@ class AssignTime : public VCSModule
 public:
   AssignTime();
   ~AssignTime();
-};
-
-class AssignTimeWithExpDistribution: public VCSModule
-{
-public:
-  AssignTimeWithExpDistribution();
-  ~AssignTimeWithExpDistribution();
 };
 
 
@@ -1029,14 +999,6 @@ class SelectEventsWithDetectorSpectrum : public anlnext::BasicModule
 public:
   SelectEventsWithDetectorSpectrum();
   ~SelectEventsWithDetectorSpectrum();
-};
-
-
-class NumHitsInDetectorFilter : public anlnext::BasicModule
-{
-public:
-  NumHitsInDetectorFilter();
-  ~NumHitsInDetectorFilter();
 };
 
 
@@ -1361,12 +1323,53 @@ public:
 
 #endif
 
+class AssignTimeWithExpDistribution : public VCSModule
+{
+public:
+  AssignTimeWithExpDistribution();
+  ~AssignTimeWithExpDistribution();
+};
+
+
+class CorrectRecombination: public VCSModule {
+  CorrectRecombination();
+  virtual ~CorrectRecombination();
+};
+
+
+class SetEnergy : public anlnext::BasicModule {
+  SetEnergy();
+  virtual ~SetEnergy();
+};
+
+
+class SetPosition : public VCSModule {
+  SetPosition();
+  virtual ~SetPosition();
+};
+
+
+class EliminateLowEnergyHits : public anlnext::BasicModule
+{
+public:
+  EliminateLowEnergyHits();
+  virtual ~EliminateLowEnergyHits();
+};
+
+
+class NumHitsInDetectorFilter : public anlnext::BasicModule {
+  NumHitsInDetectorFilter();
+  virtual ~NumHitsInDetectorFilter();
+};
+
+
 class NanoGRAMSLoadConfig : public VCSModule
 {
 public:
-  NanoGRAMSLoadConfig();
-  ~NanoGRAMSLoadConfig() override;
+  NanoGRAMSLoadConfig() = default;
+  virtual ~NanoGRAMSLoadConfig() = default;
 };
+
 
 class NanoGRAMSReadTPCEvents : public VCSModule
 {
@@ -1375,12 +1378,14 @@ public:
   ~NanoGRAMSReadTPCEvents() override;
 };
 
+
 class NanoGRAMSCorrectLightWaveform : public VCSModule
 {
 public:
   NanoGRAMSCorrectLightWaveform();
   ~NanoGRAMSCorrectLightWaveform() override;
 };
+
 
 class NanoGRAMSAnalyzeLight : public VCSModule
 {
@@ -1389,6 +1394,7 @@ public:
   ~NanoGRAMSAnalyzeLight() override;
 };
 
+
 class NanoGRAMSSelectEvents : public VCSModule
 {
 public:
@@ -1396,11 +1402,37 @@ public:
   ~NanoGRAMSSelectEvents() override;
 };
 
+
 class NanoGRAMSQuickLookWriter : public VCSModule
 {
 public:
   NanoGRAMSQuickLookWriter();
   ~NanoGRAMSQuickLookWriter() override;
 };
+
+
+class ApplyCCE : public VCSModule
+{
+public:
+  ApplyCCE();
+  virtual ~ApplyCCE();
+};
+
+
+class ApplyRecombination : public VCSModule
+{
+public:
+  ApplyRecombination();
+  virtual ~ApplyRecombination();
+};
+
+
+class PushBackToSimulatedHits : public VCSModule
+{
+public:
+  PushBackToSimulatedHits();
+  virtual ~PushBackToSimulatedHits();
+};
+
 
 }

@@ -19,6 +19,7 @@
 
 #ifndef COMPTONSOFT_FlagDefinition_H
 #define COMPTONSOFT_FlagDefinition_H 1
+#include <cstdint>
 
 namespace comptonsoft {
 

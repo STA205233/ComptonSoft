@@ -19,13 +19,14 @@
 
 #include "VDeviceSimulation.hh"
 
-#include <algorithm>
-#include <iterator>
-#include <cmath>
-#include "CLHEP/Random/RandGauss.h"
 #include "AstroUnits.hh"
+#include "CLHEP/Random/RandGauss.h"
 #include "DetectorHit.hh"
 #include "FlagDefinition.hh"
+#include "TF1.h"
+#include <algorithm>
+#include <cmath>
+#include <iterator>
 
 namespace unit = anlgeant4::unit;
 
@@ -35,11 +36,11 @@ VDeviceSimulation::VDeviceSimulation()
   : DepthSensingMode_(0),
     DepthResolution_(0.0),
     QuenchingFactor_{1.0, 0.0, 0.0},
-    TimeResolutionFast_(100.0*unit::ns),
-    TimeResolutionSlow_(1000.0*unit::ns),
+    TimeResolutionFast_(100.0 * unit::ns),
+    TimeResolutionSlow_(1000.0 * unit::ns),
     pedestalEnabled_(false)
-  {
-  }
+{
+}
 
 VDeviceSimulation::~VDeviceSimulation() = default;
 
@@ -54,7 +55,7 @@ void VDeviceSimulation::initializeTables()
   const int TableSize = SizeOfTable();
 
   PixelIDVector_.resize(TableSize);
-  for (int i=0; i<TableSize; i++) {
+  for (int i = 0; i < TableSize; i++) {
     PixelIDVector_[i] = TableIndexToPixelID(i);
   }
 
@@ -84,12 +85,12 @@ void VDeviceSimulation::makeDetectorHits()
 
   removeHitsAtChannelsDisabled(SimulatedHits_);
 
-  for (auto& hit: SimulatedHits_) {
+  for (auto& hit : SimulatedHits_) {
     makeEPI(hit);
   }
   removeHitsBelowThresholds(SimulatedHits_);
-  
-  for (auto& hit: SimulatedHits_) {
+
+  for (auto& hit : SimulatedHits_) {
     hit->setTimeGroup(0);
     hit->setSelfTriggered(true);
     hit->setTriggered(true);
@@ -104,40 +105,41 @@ void VDeviceSimulation::makeDetectorHits()
 
 void VDeviceSimulation::makeRawDetectorHits()
 {
-  for (auto& hit: RawHits_) {
+  for (auto& hit : RawHits_) {
     insertDetectorHit(hit);
   }
 }
 
 void VDeviceSimulation::removeHitsOutOfPixelRange(std::list<DetectorHit_sptr>& hits)
 {
-  hits.remove_if([this](DetectorHit_sptr hit) {
-      return !checkRange(hit->Pixel());
-    });
+  hits.remove_if([this](DetectorHit_sptr hit) { return !checkRange(hit->Pixel()); });
 }
 
 void VDeviceSimulation::removeHitsAtChannelsDisabled(std::list<DetectorHit_sptr>& hits)
 {
-  hits.remove_if([this](DetectorHit_sptr hit) {
-      return (getChannelDisabled(hit->Pixel()) == channel_status::readout_disable);
-    });
+  hits.remove_if(
+      [this](DetectorHit_sptr hit) { return (getChannelDisabled(hit->Pixel()) == channel_status::readout_disable); });
 }
 
 void VDeviceSimulation::removeHitsBelowThresholds(std::list<DetectorHit_sptr>& hits)
 {
   hits.remove_if([this](DetectorHit_sptr hit) {
-      const double threshold = getThreshold(hit->Pixel());
-      return (hit->EPI() < threshold);
-    });
+    const double threshold = getThreshold(hit->Pixel());
+    const double threshold_photon = PhotonThreshold();
+    if (threshold_photon < 0.0) {
+      return hit->EPI() < threshold;
+    }
+    return (hit->EPI() < threshold) && (hit->PhotonCount() < threshold_photon);
+  });
 }
 
 void VDeviceSimulation::mergeHits(std::list<DetectorHit_sptr>& hits)
 {
-  for (auto it1=hits.begin(); it1!=hits.end(); ++it1) {
+  for (auto it1 = hits.begin(); it1 != hits.end(); ++it1) {
     auto it2 = it1;
     ++it2;
-    while ( it2 != hits.end() ) {
-      if ( (*it1)->isInSamePixel(**it2) ) {
+    while (it2 != hits.end()) {
+      if ((*it1)->isInSamePixel(**it2)) {
         (*it1)->merge(**it2);
         it2 = hits.erase(it2);
       }
@@ -148,16 +150,15 @@ void VDeviceSimulation::mergeHits(std::list<DetectorHit_sptr>& hits)
   }
 }
 
-void VDeviceSimulation::mergeHitsIfCoincident(double time_width,
-                                              std::list<DetectorHit_sptr>& hits)
+void VDeviceSimulation::mergeHitsIfCoincident(double time_width, std::list<DetectorHit_sptr>& hits)
 {
-  for (auto it1=hits.begin(); it1!=hits.end(); ++it1) {
+  for (auto it1 = hits.begin(); it1 != hits.end(); ++it1) {
     auto it2 = it1;
     ++it2;
-    while ( it2 != hits.end() ) {
+    while (it2 != hits.end()) {
       const double hit1Time = (*it1)->RealTime();
       const double hit2Time = (*it2)->RealTime();
-      if ( (*it1)->isInSamePixel(**it2) && std::abs(hit1Time-hit2Time)<=time_width ) {
+      if ((*it1)->isInSamePixel(**it2) && std::abs(hit1Time - hit2Time) <= time_width) {
         (*it1)->merge(**it2);
         it2 = hits.erase(it2);
       }
@@ -171,7 +172,7 @@ void VDeviceSimulation::mergeHitsIfCoincident(double time_width,
 void VDeviceSimulation::performTriggerDiscrimination()
 {
   using HitType = DetectorHit_sptr;
-  for (HitType& hit: SimulatedHits_) {
+  for (HitType& hit : SimulatedHits_) {
     if (checkTriggerDiscrimination(hit->EnergyCharge(), hit->Pixel())) {
       hit->setSelfTriggered(true);
       hit->setSelfTriggeredTime(hit->RealTime());
@@ -189,26 +190,22 @@ void VDeviceSimulation::applyQuenching(DetectorHit_sptr hit) const
   }
 }
 
-double VDeviceSimulation::
-calculateEnergyCharge(const PixelID& ,
-                      double energyDeposit,
-                      double , double , double ) const
+double VDeviceSimulation::calculateEnergyCharge(const PixelID&, double energyDeposit, double, double, double) const
 {
   return energyDeposit;
 }
 
-std::tuple<double, double> VDeviceSimulation::
-calculateEPI(double energyCharge, const PixelID& pixel) const
+std::tuple<double, double> VDeviceSimulation::calculateEPI(double energyCharge, const PixelID& pixel) const
 {
   // y^2 = param0^2 + (param1*x^(1/2))^2 + (param2*x)^2
   // x: energy in keV
   // y: noise value in keV
-  
-  const double x = energyCharge/unit::keV; // in keV
+
+  const double x = energyCharge / unit::keV; // in keV
   const double param0 = getNoiseParam0(pixel);
   const double param1 = getNoiseParam1(pixel);
   const double param2 = getNoiseParam2(pixel);
-  const double y2 = param0*param0 + param1*param1*x + param2*param2*x*x; // in keV2
+  const double y2 = param0 * param0 + param1 * param1 * x + param2 * param2 * x * x; // in keV2
   const double sigma = std::sqrt(y2) * unit::keV;
   const double ePI = CLHEP::RandGauss::shoot(energyCharge, sigma);
   return std::make_tuple(ePI, sigma);
@@ -222,20 +219,22 @@ void VDeviceSimulation::makeEPI(DetectorHit_sptr hit)
   hit->setEPIError(ePIError);
 }
 
-void VDeviceSimulation::makePhotonCount() {
+void VDeviceSimulation::makePhotonCount()
+{
   double photonCount = 0.0;
-  for (auto& hit: SimulatedHits_) {
+  for (auto& hit : SimulatedHits_) {
     photonCount += hit->PhotonCount();
   }
   double photonCountWithNoise(0.0), photonCountError(0.0);
   std::tie(photonCountWithNoise, photonCountError) = applyNoiseToPhotonCount(photonCount);
-  for (auto& hit: SimulatedHits_) {
+  for (auto& hit : SimulatedHits_) {
     hit->setPhotonCount(photonCountWithNoise);
     hit->setPhotonCountError(photonCountError);
   }
 }
 
-std::tuple<double, double> VDeviceSimulation::applyNoiseToPhotonCount(double photonCount) {
+std::tuple<double, double> VDeviceSimulation::applyNoiseToPhotonCount(double photonCount)
+{
   if (photonCount <= 0.0) {
     return std::make_tuple(0.0, 0.0);
   }
@@ -249,12 +248,30 @@ std::tuple<double, double> VDeviceSimulation::applyNoiseToPhotonCount(double pho
   return std::make_tuple(CLHEP::RandGauss::shoot(photonCount, std::sqrt(noise)), std::sqrt(noise));
 }
 
-bool VDeviceSimulation::
-checkTriggerDiscrimination(double energyCharge, const PixelID& pixel) const
+void VDeviceSimulation::setPhotonEfficiency(double effs)
+{
+  photonEfficiencyUniform_ = effs;
+  photonEfficiencyFunction_.reset();
+}
+
+void VDeviceSimulation::setPhotonEfficiency(std::unique_ptr<TF1>&& efficiency)
+{
+  photonEfficiencyFunction_ = std::move(efficiency);
+}
+
+double VDeviceSimulation::PhotonEfficiency(double x, double y, double z) const
+{
+  if (!photonEfficiencyFunction_) {
+    return photonEfficiencyUniform_;
+  }
+  // the function is defined in cm
+  return photonEfficiencyFunction_->Eval(x / unit::cm, y / unit::cm, z / unit::cm);
+}
+
+bool VDeviceSimulation::checkTriggerDiscrimination(double energyCharge, const PixelID& pixel) const
 {
   const int channelStatus = getChannelDisabled(pixel);
-  if (channelStatus==channel_status::readout_disable ||
-      channelStatus==channel_status::trigger_disable) {
+  if (channelStatus == channel_status::readout_disable || channelStatus == channel_status::trigger_disable) {
     return false;
   }
   const double sigma = getTriggerDiscriminationSigma(pixel);
@@ -295,21 +312,18 @@ void VDeviceSimulation::prepareForTimingProcess()
 void VDeviceSimulation::sortHitsInTimeOrder(std::list<DetectorHit_sptr>& hits)
 {
   using HitType = DetectorHit_sptr;
-  hits.sort([](HitType h1, HitType h2)-> bool {
-      return h1->RealTime() < h2->RealTime();
-    });
+  hits.sort([](HitType h1, HitType h2) -> bool { return h1->RealTime() < h2->RealTime(); });
 }
 
 bool VDeviceSimulation::isSelfTriggered() const
 {
   using HitType = DetectorHit_sptr;
   bool triggered = false;
-  const auto it = std::find_if(std::begin(SimulatedHits_),
-                               std::end(SimulatedHits_),
-                               [](HitType hit)-> bool {
-                                 return hit->SelfTriggered();
-                               });
-  if (it != std::end(SimulatedHits_)) { triggered = true; }
+  const auto it = std::find_if(std::begin(SimulatedHits_), std::end(SimulatedHits_),
+                               [](HitType hit) -> bool { return hit->SelfTriggered(); });
+  if (it != std::end(SimulatedHits_)) {
+    triggered = true;
+  }
   return triggered;
 }
 
@@ -318,11 +332,8 @@ double VDeviceSimulation::FirstTriggerTime() const
   using HitType = DetectorHit_sptr;
 
   double triggeredTime = std::numeric_limits<double>::max();
-  const auto it = std::find_if(std::begin(SimulatedHits_),
-                               std::end(SimulatedHits_),
-                               [](HitType hit)-> bool {
-                                 return hit->SelfTriggered();
-                               });
+  const auto it = std::find_if(std::begin(SimulatedHits_), std::end(SimulatedHits_),
+                               [](HitType hit) -> bool { return hit->SelfTriggered(); });
   if (it != std::end(SimulatedHits_)) {
     triggeredTime = (*it)->SelfTriggeredTime();
   }
@@ -332,24 +343,20 @@ double VDeviceSimulation::FirstTriggerTime() const
 void VDeviceSimulation::makeDetectorHitsAtTime(double time_triggered, int time_group)
 {
   using HitType = DetectorHit_sptr;
-  
-  const double time_start = time_triggered - 0.5*TimeResolutionSlow_;
-  const double time_end   = time_triggered + 0.5*TimeResolutionSlow_;
-  const auto itStart = std::find_if(std::begin(SimulatedHits_),
-                                    std::end(SimulatedHits_),
-                                    [=](HitType hit)-> bool {
-                                      const double hitTime = hit->RealTime();
-                                      return (hitTime >= time_start);
-                                    });
-  const auto itEnd = std::find_if(std::begin(SimulatedHits_),
-                                  std::end(SimulatedHits_),
-                                  [=](HitType hit)-> bool {
-                                    const double hitTime = hit->RealTime();
-                                    return (hitTime > time_end);
-                                  });
+
+  const double time_start = time_triggered - 0.5 * TimeResolutionSlow_;
+  const double time_end = time_triggered + 0.5 * TimeResolutionSlow_;
+  const auto itStart = std::find_if(std::begin(SimulatedHits_), std::end(SimulatedHits_), [=](HitType hit) -> bool {
+    const double hitTime = hit->RealTime();
+    return (hitTime >= time_start);
+  });
+  const auto itEnd = std::find_if(std::begin(SimulatedHits_), std::end(SimulatedHits_), [=](HitType hit) -> bool {
+    const double hitTime = hit->RealTime();
+    return (hitTime > time_end);
+  });
 
   std::list<HitType> hits(itStart, itEnd);
-  
+
   // erase all hits before time_end
   SimulatedHits_.erase(std::begin(SimulatedHits_), itEnd);
 
@@ -360,15 +367,15 @@ void VDeviceSimulation::makeDetectorHitsAtTime(double time_triggered, int time_g
     std::move(pedestalHits.begin(), pedestalHits.end(), std::back_inserter(hits));
     mergeHits(hits);
   }
-  
+
   removeHitsAtChannelsDisabled(hits);
 
-  for (auto& hit: hits) {
+  for (auto& hit : hits) {
     makeEPI(hit);
   }
   removeHitsBelowThresholds(hits);
-  
-  for (auto& hit: hits) {
+
+  for (auto& hit : hits) {
     hit->setTimeGroup(time_group);
     hit->setTriggered(true);
     hit->setTriggeredTime(time_triggered);
@@ -378,12 +385,11 @@ void VDeviceSimulation::makeDetectorHitsAtTime(double time_triggered, int time_g
   }
 }
 
-std::list<DetectorHit_sptr> VDeviceSimulation::
-generatePedestalSignals(int time_group, double time_of_signal) const
+std::list<DetectorHit_sptr> VDeviceSimulation::generatePedestalSignals(int time_group, double time_of_signal) const
 {
   std::list<DetectorHit_sptr> hits;
   const int NumChannels = SizeOfTable();
-  for (int i=0; i<NumChannels; i++) {
+  for (int i = 0; i < NumChannels; i++) {
     const PixelID pixel = TableIndexToPixelID(i);
     DetectorHit_sptr hit(new DetectorHit);
     hit->setInstrumentID(getInstrumentID());
@@ -403,13 +409,13 @@ void VDeviceSimulation::assignLocalDepth(DetectorHit_sptr hit) const
   const double localposy = hit->LocalPositionY();
   const double localposz = hit->LocalPositionZ();
 
-  if (DepthSensingMode()==1) {
+  if (DepthSensingMode() == 1) {
     double zMeasured = CLHEP::RandGauss::shoot(localposz, DepthResolution());
-    if (zMeasured < -0.5*getThickness()) {
-      zMeasured = -0.5*getThickness();
+    if (zMeasured < -0.5 * getThickness()) {
+      zMeasured = -0.5 * getThickness();
     }
-    else if (zMeasured > +0.5*getThickness()) {
-      zMeasured = +0.5*getThickness();
+    else if (zMeasured > +0.5 * getThickness()) {
+      zMeasured = +0.5 * getThickness();
     }
 
     hit->setDepthSensingMode(DepthSensingMode());
@@ -419,10 +425,10 @@ void VDeviceSimulation::assignLocalDepth(DetectorHit_sptr hit) const
 
 void VDeviceSimulation::assignLocalPositionError(DetectorHit_sptr hit) const
 {
-  const double conversionToSigma = 1.0/std::sqrt(12.0);
-  const double dx = getVoxelPitchX()*conversionToSigma;
-  const double dy = getVoxelPitchY()*conversionToSigma;
-  const double dz = (DepthSensingMode()==1) ? DepthResolution() : (getVoxelPitchZ()*conversionToSigma);
+  const double conversionToSigma = 1.0 / std::sqrt(12.0);
+  const double dx = getVoxelPitchX() * conversionToSigma;
+  const double dy = getVoxelPitchY() * conversionToSigma;
+  const double dz = (DepthSensingMode() == 1) ? DepthResolution() : (getVoxelPitchZ() * conversionToSigma);
   hit->setLocalPositionError(dx, dy, dz);
 }
 } /* namespace comptonsoft */

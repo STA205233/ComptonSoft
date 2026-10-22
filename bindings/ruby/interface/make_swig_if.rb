@@ -148,12 +148,21 @@ classList = [
   ANL::SWIGClass.new("FilterByGoodTimeIntervalsForHXI", false, 'USE_FITSIO'),
 
   ANL::SWIGClass.new("AssignTimeWithExpDistribution"),
+  ANL::SWIGClass.new("CorrectRecombination"),
+  ANL::SWIGClass.new("SetEnergy"),
+  ANL::SWIGClass.new("SetPosition"),
+  ANL::SWIGClass.new("EliminateLowEnergyHits"),
+  ANL::SWIGClass.new("NumHitsInDetectorFilter"),
+  
   ANL::SWIGClass.new("NanoGRAMSLoadConfig"),
   ANL::SWIGClass.new("NanoGRAMSReadTPCEvents"),
   ANL::SWIGClass.new("NanoGRAMSCorrectLightWaveform"),
   ANL::SWIGClass.new("NanoGRAMSAnalyzeLight"),
   ANL::SWIGClass.new("NanoGRAMSSelectEvents"),
   ANL::SWIGClass.new("NanoGRAMSQuickLookWriter"),
+  ANL::SWIGClass.new("ApplyCCE"),
+  ANL::SWIGClass.new("ApplyRecombination"),
+  ANL::SWIGClass.new("PushBackToSimulatedHits"),
 ]
 
 classList.each{|s|
@@ -168,6 +177,7 @@ classList.each{|s|
     "../../../source/applications/coded_aperture/include",
     "../../../source/applications/radioactivation/include",
     "../../../source/applications/missions/astroh/include",
+    "../../../source/applications/missions/nanograms/include",
   ]
 }
 

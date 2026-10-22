@@ -40,17 +40,20 @@ namespace unit = anlgeant4::unit;
 
 namespace comptonsoft {
 
-SimDetectorUnitLArTPCPixel::SimDetectorUnitLArTPCPixel() {
+SimDetectorUnitLArTPCPixel::SimDetectorUnitLArTPCPixel()
+{
   setNumPixelsInWPCalculation(20.0);
 };
 
 SimDetectorUnitLArTPCPixel::~SimDetectorUnitLArTPCPixel() = default;
-void SimDetectorUnitLArTPCPixel::initializeEvent() {
+void SimDetectorUnitLArTPCPixel::initializeEvent()
+{
   RealDetectorUnitLArTPCPixel::initializeEvent();
   DeviceSimulation::initializeEvent();
 }
 
-double SimDetectorUnitLArTPCPixel::ChargeCollectionEfficiency(const VoxelID &voxel, double x, double y, double z) const {
+double SimDetectorUnitLArTPCPixel::ChargeCollectionEfficiency(const VoxelID& voxel, double x, double y, double z) const
+{
   const vector3_t pixelCenter = LocalPosition(voxel);
   const double xInPixel = x - pixelCenter.x();
   const double yInPixel = y - pixelCenter.y();
@@ -62,7 +65,8 @@ double SimDetectorUnitLArTPCPixel::ChargeCollectionEfficiency(const VoxelID &vox
   return CCEMap_->GetBinContent(ix, iy, iz);
 }
 
-double SimDetectorUnitLArTPCPixel::WeightingPotential(const VoxelID &voxel, double x, double y, double z) {
+double SimDetectorUnitLArTPCPixel::WeightingPotential(const VoxelID& voxel, double x, double y, double z)
+{
   const vector3_t pixelCenter = LocalPosition(voxel);
   const double xInPixel = x - pixelCenter.x();
   const double yInPixel = y - pixelCenter.y();
@@ -74,7 +78,8 @@ double SimDetectorUnitLArTPCPixel::WeightingPotential(const VoxelID &voxel, doub
   return WPMap_->GetBinContent(ix, iy, iz);
 }
 
-void SimDetectorUnitLArTPCPixel::buildWPMap() {
+void SimDetectorUnitLArTPCPixel::buildWPMap()
+{
   if (ChargeCollectionMode() == 2) {
     buildWPMap(31, 31, 100, 1.0);
   }
@@ -87,7 +92,8 @@ void SimDetectorUnitLArTPCPixel::buildWPMap() {
   }
 }
 
-void SimDetectorUnitLArTPCPixel::buildWPMap(int nx, int ny, int nz, double pixel_factor) {
+void SimDetectorUnitLArTPCPixel::buildWPMap(int nx, int ny, int nz, double pixel_factor)
+{
   if (nx < 1 || ny < 1 || nz <= 1) {
     std::cout << "Error : buildWPMap " << std::endl;
     return;
@@ -109,14 +115,12 @@ void SimDetectorUnitLArTPCPixel::buildWPMap(int nx, int ny, int nz, double pixel
   }
 
   const std::string histname = (boost::format("wp_%04d") % getID()).str();
-  WPMap_ = new TH3D(histname.c_str(), histname.c_str(),
-                    nx, -0.5 * MapSizeX / unit::cm, +0.5 * MapSizeX / unit::cm,
-                    ny, -0.5 * MapSizeY / unit::cm, +0.5 * MapSizeY / unit::cm,
-                    nz, -0.5 * MapSizeZ / unit::cm, +0.5 * MapSizeZ / unit::cm);
+  WPMap_ = new TH3D(histname.c_str(), histname.c_str(), nx, -0.5 * MapSizeX / unit::cm, +0.5 * MapSizeX / unit::cm, ny,
+                    -0.5 * MapSizeY / unit::cm, +0.5 * MapSizeY / unit::cm, nz, -0.5 * MapSizeZ / unit::cm,
+                    +0.5 * MapSizeZ / unit::cm);
 
   auto wpModel = std::make_unique<WeightingPotentialPixel>();
-  wpModel->setGeometry(getPixelPitchX(), getPixelPitchY(), getThickness(),
-                       NumPixelsInWPCalculation());
+  wpModel->setGeometry(getPixelPitchX(), getPixelPitchY(), getThickness(), NumPixelsInWPCalculation());
   wpModel->initializeTable();
   std::cout << "calculating weighing potential..." << std::endl;
   for (int ix = 1; ix <= nx; ix++) {
@@ -169,7 +173,8 @@ void SimDetectorUnitLArTPCPixel::buildWPMap(int nx, int ny, int nz, double pixel
   std::cout << std::endl;
 }
 
-void SimDetectorUnitLArTPCPixel::buildCCEMap() {
+void SimDetectorUnitLArTPCPixel::buildCCEMap()
+{
   if (ChargeCollectionMode() == 2) {
     buildCCEMap(31, 31, 100, 1.0);
   }
@@ -182,7 +187,8 @@ void SimDetectorUnitLArTPCPixel::buildCCEMap() {
   }
 }
 
-void SimDetectorUnitLArTPCPixel::buildCCEMap(int nx, int ny, int nz, double pixel_factor) {
+void SimDetectorUnitLArTPCPixel::buildCCEMap(int nx, int ny, int nz, double pixel_factor)
+{
   if (nx < 1 || ny < 1 || nz < 1) {
     std::cout << "Error : buildCCEMap " << std::endl;
     return;
@@ -204,10 +210,9 @@ void SimDetectorUnitLArTPCPixel::buildCCEMap(int nx, int ny, int nz, double pixe
   }
 
   const std::string histname = (boost::format("cce_%04d") % getID()).str();
-  CCEMap_ = new TH3D(histname.c_str(), histname.c_str(),
-                     nx, -0.5 * MapSizeX / unit::cm, +0.5 * MapSizeX / unit::cm,
-                     ny, -0.5 * MapSizeY / unit::cm, +0.5 * MapSizeY / unit::cm,
-                     nz, -0.5 * MapSizeZ / unit::cm, +0.5 * MapSizeZ / unit::cm);
+  CCEMap_ = new TH3D(histname.c_str(), histname.c_str(), nx, -0.5 * MapSizeX / unit::cm, +0.5 * MapSizeX / unit::cm, ny,
+                     -0.5 * MapSizeY / unit::cm, +0.5 * MapSizeY / unit::cm, nz, -0.5 * MapSizeZ / unit::cm,
+                     +0.5 * MapSizeZ / unit::cm);
 
   std::cout << "calculating charge collection efficiency..." << std::endl;
 
@@ -263,7 +268,8 @@ void SimDetectorUnitLArTPCPixel::buildCCEMap(int nx, int ny, int nz, double pixe
   std::cout << "Charge collection efficiency map is built." << std::endl;
 }
 
-void SimDetectorUnitLArTPCPixel::checkBranchingGamma() {
+void SimDetectorUnitLArTPCPixel::checkGammaRays()
+{
   const int N = NumberOfRawHits();
   uint64_t flag = 0;
   for (int i = 0; i < N; i++) {
@@ -271,7 +277,8 @@ void SimDetectorUnitLArTPCPixel::checkBranchingGamma() {
     if (rawhit->isProcess(process::Bremsstrahlung)) {
       flag |= flag::BranchingGammaIncluded;
     }
-    if ((rawhit->isProcess(process::PhotoelectricAbsorption) || rawhit->isProcess(process::ComptonScattering)) && rawhit->TrackID() != 1) {
+    if ((rawhit->isProcess(process::PhotoelectricAbsorption) || rawhit->isProcess(process::ComptonScattering)) &&
+        rawhit->TrackID() != 1) {
       rawhit->addFlags(flag::BranchingGammaDeposited);
     }
     if (rawhit->isProcess(process::PhotoelectricAbsorption) && rawhit->TrackID() == 1) {
@@ -289,8 +296,9 @@ void SimDetectorUnitLArTPCPixel::checkBranchingGamma() {
   }
 }
 
-void SimDetectorUnitLArTPCPixel::simulatePulseHeights() {
-  checkBranchingGamma();
+void SimDetectorUnitLArTPCPixel::simulatePulseHeights()
+{
+  checkGammaRays();
   const int N = NumberOfRawHits();
   for (int i = 0; i < N; i++) {
     DetectorHit_sptr rawhit = getRawHit(i);
@@ -341,7 +349,7 @@ void SimDetectorUnitLArTPCPixel::simulatePulseHeights() {
       }
       else {
         double longitudinal, transverse;
-        diffusionSigma = DiffusionSigmaAnode3D(localposz, longitudinal, transverse);// only use transverse diffusion.
+        diffusionSigma = DiffusionSigmaAnode3D(localposz, longitudinal, transverse); // only use transverse diffusion.
       }
       for (int l = 0; l < numDivision; l++) {
         const double dx = gRandom->Gaus(0.0, diffusionSigma);
@@ -349,11 +357,9 @@ void SimDetectorUnitLArTPCPixel::simulatePulseHeights() {
         const PixelID pixelDiff = findPixel(localposx + dx, localposy + dy);
 
         auto itHit = find_if(diffusionHits.begin(), diffusionHits.end(),
-                             [&](const DetectorHit_sptr &hit) {
-                               return (hit->Pixel() == pixelDiff);
-                             });
+                             [&](const DetectorHit_sptr& hit) { return (hit->Pixel() == pixelDiff); });
         if (itHit != diffusionHits.end()) {
-          DetectorHit_sptr &hit = *itHit;
+          DetectorHit_sptr& hit = *itHit;
           hit->setEnergyDeposit(hit->EnergyDeposit() + edepDivision);
           hit->setEnergyCharge(hit->EnergyCharge() + energyChargeDivision);
           hit->setPhotonCount(hit->PhotonCount() + photonCountDivision);
@@ -369,59 +375,59 @@ void SimDetectorUnitLArTPCPixel::simulatePulseHeights() {
       }
 
       for (auto itHit = diffusionHits.begin(); itHit != diffusionHits.end(); itHit++) {
-        DetectorHit_sptr &hit = *itHit;
+        DetectorHit_sptr& hit = *itHit;
         insertSimulatedHit(hit);
       }
     }
-    
+
     // adjacent pad
-    if (ChargeCollectionMode()>=3) {
+    if (ChargeCollectionMode() >= 3) {
       DetectorHit_sptr hit;
       PixelID adjacentPixel;
-      
-      adjacentPixel.set(pixel.X()+1, pixel.Y()+1);
+
+      adjacentPixel.set(pixel.X() + 1, pixel.Y() + 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()+1, pixel.Y());
+
+      adjacentPixel.set(pixel.X() + 1, pixel.Y());
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()+1, pixel.Y()-1);
+
+      adjacentPixel.set(pixel.X() + 1, pixel.Y() - 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()  , pixel.Y()+1);
+
+      adjacentPixel.set(pixel.X(), pixel.Y() + 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()  , pixel.Y()-1);
+
+      adjacentPixel.set(pixel.X(), pixel.Y() - 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()-1, pixel.Y()+1);
+
+      adjacentPixel.set(pixel.X() - 1, pixel.Y() + 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()-1, pixel.Y()  );
+
+      adjacentPixel.set(pixel.X() - 1, pixel.Y());
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
       insertSimulatedHit(hit);
-      
-      adjacentPixel.set(pixel.X()-1, pixel.Y()-1);
+
+      adjacentPixel.set(pixel.X() - 1, pixel.Y() - 1);
       hit = generateHit(*rawhit, adjacentPixel);
       hit->setEnergyDeposit(0.0);
       hit->setPhotonCount(0.0);
@@ -430,8 +436,8 @@ void SimDetectorUnitLArTPCPixel::simulatePulseHeights() {
   }
 }
 
-DetectorHit_sptr SimDetectorUnitLArTPCPixel::generateHit(const DetectorHit &rawhit,
-                                                         const PixelID &pixel) {
+DetectorHit_sptr SimDetectorUnitLArTPCPixel::generateHit(const DetectorHit& rawhit, const PixelID& pixel)
+{
   DetectorHit_sptr hit(new DetectorHit(rawhit));
   hit->addFlags(flag::PrioritySide);
   if (isAnodeReadout()) {
@@ -451,21 +457,18 @@ DetectorHit_sptr SimDetectorUnitLArTPCPixel::generateHit(const DetectorHit &rawh
 
   applyQuenching(hit);
   applyRecombination(hit); // echarge is updated in this function.
-  
+
   const double localposx = hit->LocalPositionX();
   const double localposy = hit->LocalPositionY();
   const double localposz = hit->LocalPositionZ();
-  const double energyCharge = calculateEnergyCharge(pixel,
-                                                  hit->EnergyCharge(),
-                                                  localposx,
-                                                  localposy,
-                                                  localposz);
+  const double energyCharge = calculateEnergyCharge(pixel, hit->EnergyCharge(), localposx, localposy, localposz);
   hit->setEnergyCharge(energyCharge);
 
   return hit;
 }
 
-void SimDetectorUnitLArTPCPixel::mergeHits(std::list<DetectorHit_sptr> &hits) {
+void SimDetectorUnitLArTPCPixel::mergeHits(std::list<DetectorHit_sptr>& hits)
+{
   for (auto it1 = hits.begin(); it1 != hits.end(); ++it1) {
     auto it2 = it1;
     ++it2;

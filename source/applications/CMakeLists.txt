@@ -59,7 +59,11 @@ set(ComptonSoftApplications_ComptonCamera_Modules
   compton_camera/src/SetEnergy.cc
   compton_camera/src/SetPosition.cc
   compton_camera/src/CorrectRecombination.cc
-  ### histograming
+  compton_camera/src/ApplyRecombination.cc
+  compton_camera/src/ApplyCCE.cc
+  compton_camera/src/PushBackToSimulatedHits.cc
+
+  # ## histograming
   compton_camera/src/HistogramEnergy1D.cc
   compton_camera/src/HistogramEnergy2D.cc
   compton_camera/src/HistogramARM.cc
@@ -70,7 +74,8 @@ set(ComptonSoftApplications_ComptonCamera_Modules
   compton_camera/src/BackProjection.cc
   compton_camera/src/BackProjectionSky.cc
   compton_camera/src/EfficiencyMapSky.cc
-  ### IO
+
+  # ## IO
   compton_camera/src/WriteComptonEventTree.cc
   compton_camera/src/ReadComptonEventTree.cc
 )

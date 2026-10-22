@@ -5,9 +5,10 @@
 #include "VGainFunction.hh"
 #include <algorithm>
 #include <cmath>
-#include <numeric>
 #include <limits>
 #include <memory>
+#include <numeric>
+
 namespace unit = anlgeant4::unit;
 
 namespace comptonsoft {
@@ -29,8 +30,8 @@ NanoGRAMSMultiChannelData::NanoGRAMSMultiChannelData()
 
 NanoGRAMSMultiChannelData::~NanoGRAMSMultiChannelData() = default;
 
-void NanoGRAMSMultiChannelData::setTemperatureCorrection(std::shared_ptr<const NanoGRAMSTemperatureCorrection> correction,
-                                                         int fec)
+void NanoGRAMSMultiChannelData::setTemperatureCorrection(
+    std::shared_ptr<const NanoGRAMSTemperatureCorrection> correction, int fec)
 {
   temperatureCorrection_ = correction;
   fec_ = fec;
@@ -122,18 +123,12 @@ double NanoGRAMSMultiChannelData::PHA2EPI(std::size_t i, double pha) const
   if (std::isnan(pha)) {
     return std::numeric_limits<double>::quiet_NaN();
   }
-  if (!std::isfinite(pha) || pha <= 0.0) {
-    return 0.0;
-  }
 
   const std::shared_ptr<const VGainFunction> gainFunction = getGainFunction(i);
   if (!gainFunction) {
     throw CSException("Gain function is not set");
   }
   const double charge = gainFunction->eval(pha) - gainFunction->eval(0.0);
-  if (charge <= 0.0) {
-    return 0.0;
-  }
 
   const double num_electrons = charge * unit::coulomb / unit::eplus;
   return num_electrons * Wion_;

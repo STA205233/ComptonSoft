@@ -140,4 +140,7 @@ class NanoGRAMSCorrectLightWaveform;
 class NanoGRAMSAnalyzeLight;
 class NanoGRAMSSelectEvents;
 class NanoGRAMSQuickLookWriter;
+class ApplyCCE;
+class ApplyRecombination;
+class PushBackToSimulatedHits;
 }

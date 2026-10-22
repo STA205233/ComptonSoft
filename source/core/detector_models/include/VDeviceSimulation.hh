@@ -20,28 +20,31 @@
 #ifndef COMPTONSOFT_VDeviceSimulation_H
 #define COMPTONSOFT_VDeviceSimulation_H 1
 
+#include "DetectorHit_sptr.hh"
+#include "PixelID.hh"
+#include "TF1.h"
+#include "VDetectorUnit.hh"
+#include "VLArRecombinationModel.hh"
+#include <iostream>
+#include <list>
+#include <memory>
 #include <tuple>
 #include <vector>
-#include <list>
-#include <iostream>
-#include "DetectorHit_sptr.hh"
-#include "VDetectorUnit.hh"
-#include "PixelID.hh"
-#include "VLArRecombinationModel.hh"
 
 namespace comptonsoft {
 
 /**
  * A virtual class for simulating a semiconductor detector device.
- * This class will provide methods to convert a deposited energy of a hit into a detector output such as an electrical pulse height, taking into account of a detector response.
- * Since the class also provides interface to such functions, you can derive a new specific class from this class to realize special treatment of detector response. 
+ * This class will provide methods to convert a deposited energy of a hit into a detector output such as an electrical
+ * pulse height, taking into account of a detector response. Since the class also provides interface to such functions,
+ * you can derive a new specific class from this class to realize special treatment of detector response.
  *
  * @author Hirokazu Odaka
  * @date 2007-xx-xx | DeviceSimulation
  * @date 2008-07-29
- * @date 2009-10-26 
- * @date 2012-07-01 | VDeviceSimulation 
- * @date 2014-10-08 | VDeviceSimulation 
+ * @date 2009-10-26
+ * @date 2012-07-01 | VDeviceSimulation
+ * @date 2014-10-08 | VDeviceSimulation
  * @date 2020-09-02 | treat EPI as a tuple of its value and error
  */
 class VDeviceSimulation : virtual public VDetectorUnit
@@ -57,122 +60,147 @@ public:
   void setDepthResolution(double v) { DepthResolution_ = v; }
   int DepthSensingMode() const { return DepthSensingMode_; }
   double DepthResolution() const { return DepthResolution_; }
-  
-  void setQuenchingFactor(double c1, double c2=0.0, double c3=0.0)
-  { QuenchingFactor_ = std::make_tuple(c1, c2, c3); }
+
+  void setQuenchingFactor(double c1, double c2 = 0.0, double c3 = 0.0)
+  {
+    QuenchingFactor_ = std::make_tuple(c1, c2, c3);
+  }
   double QuenchingFactor() const { return QuenchingFactor1(); }
   double QuenchingFactor1() const { return std::get<0>(QuenchingFactor_); }
   double QuenchingFactor2() const { return std::get<1>(QuenchingFactor_); }
   double QuenchingFactor3() const { return std::get<2>(QuenchingFactor_); }
 
-  template <typename IndexType>
-  void setChannelDisabled(IndexType i, int v)
-  { setTableValue(&VDeviceSimulation::ChannelDisabledVector_, i, v); }
+  void insertSimulatedHit(DetectorHit_sptr hit) { SimulatedHits_.push_back(hit); }
 
-  template <typename SelectorType>
-  void setChannelDisabledToSelected(int v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::ChannelDisabledVector_, v, selector); }
+  template <typename IndexType> void setChannelDisabled(IndexType i, int v)
+  {
+    setTableValue(&VDeviceSimulation::ChannelDisabledVector_, i, v);
+  }
 
-  template <typename IndexType>
-  int getChannelDisabled(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::ChannelDisabledVector_, i); }
+  template <typename SelectorType> void setChannelDisabledToSelected(int v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::ChannelDisabledVector_, v, selector);
+  }
 
-  void resetChannelDisabledVector(int v)
-  { resetTable(&VDeviceSimulation::ChannelDisabledVector_, v); }
+  template <typename IndexType> int getChannelDisabled(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::ChannelDisabledVector_, i);
+  }
 
-  template <typename IndexType>
-  void setNoiseParam0(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::NoiseParam0Vector_, i, v); }
+  void resetChannelDisabledVector(int v) { resetTable(&VDeviceSimulation::ChannelDisabledVector_, v); }
 
-  template <typename SelectorType>
-  void setNoiseParam0ToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::NoiseParam0Vector_, v, selector); }
+  template <typename IndexType> void setNoiseParam0(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::NoiseParam0Vector_, i, v);
+  }
 
-  template <typename IndexType>
-  double getNoiseParam0(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::NoiseParam0Vector_, i); }
+  template <typename SelectorType> void setNoiseParam0ToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::NoiseParam0Vector_, v, selector);
+  }
 
-  void resetNoiseParam0Vector(double v)
-  { resetTable(&VDeviceSimulation::NoiseParam0Vector_, v); }
+  template <typename IndexType> double getNoiseParam0(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::NoiseParam0Vector_, i);
+  }
 
-  template <typename IndexType>
-  void setNoiseParam1(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::NoiseParam1Vector_, i, v); }
+  void resetNoiseParam0Vector(double v) { resetTable(&VDeviceSimulation::NoiseParam0Vector_, v); }
 
-  template <typename SelectorType>
-  void setNoiseParam1ToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::NoiseParam1Vector_, v, selector); }
+  template <typename IndexType> void setNoiseParam1(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::NoiseParam1Vector_, i, v);
+  }
 
-  template <typename IndexType>
-  double getNoiseParam1(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::NoiseParam1Vector_, i); }
+  template <typename SelectorType> void setNoiseParam1ToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::NoiseParam1Vector_, v, selector);
+  }
 
-  void resetNoiseParam1Vector(double v)
-  { resetTable(&VDeviceSimulation::NoiseParam1Vector_, v); }
+  template <typename IndexType> double getNoiseParam1(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::NoiseParam1Vector_, i);
+  }
 
-  template <typename IndexType>
-  void setNoiseParam2(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::NoiseParam2Vector_, i, v); }
+  void resetNoiseParam1Vector(double v) { resetTable(&VDeviceSimulation::NoiseParam1Vector_, v); }
 
-  template <typename SelectorType>
-  void setNoiseParam2ToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::NoiseParam2Vector_, v, selector); }
+  template <typename IndexType> void setNoiseParam2(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::NoiseParam2Vector_, i, v);
+  }
 
-  template <typename IndexType>
-  double getNoiseParam2(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::NoiseParam2Vector_, i); }
+  template <typename SelectorType> void setNoiseParam2ToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::NoiseParam2Vector_, v, selector);
+  }
 
-  void resetNoiseParam2Vector(double v)
-  { resetTable(&VDeviceSimulation::NoiseParam2Vector_, v); }
+  template <typename IndexType> double getNoiseParam2(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::NoiseParam2Vector_, i);
+  }
 
-  template <typename IndexType>
-  void setThreshold(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::ThresholdVector_, i, v); }
+  void resetNoiseParam2Vector(double v) { resetTable(&VDeviceSimulation::NoiseParam2Vector_, v); }
 
-  template <typename SelectorType>
-  void setThresholdToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::ThresholdVector_, v, selector); }
+  template <typename IndexType> void setThreshold(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::ThresholdVector_, i, v);
+  }
 
-  template <typename IndexType>
-  double getThreshold(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::ThresholdVector_, i); }
+  template <typename SelectorType> void setThresholdToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::ThresholdVector_, v, selector);
+  }
 
-  void resetThresholdVector(double v)
-  { resetTable(&VDeviceSimulation::ThresholdVector_, v); }
+  template <typename IndexType> double getThreshold(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::ThresholdVector_, i);
+  }
 
-  template <typename IndexType>
-  void setTriggerDiscriminationCenter(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::TriggerDiscriminationCenterVector_, i, v); }
+  void resetThresholdVector(double v) { resetTable(&VDeviceSimulation::ThresholdVector_, v); }
 
-  template <typename SelectorType>
-  void setTriggerDiscriminationCenterToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::TriggerDiscriminationCenterVector_, v, selector); }
+  template <typename IndexType> void setTriggerDiscriminationCenter(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::TriggerDiscriminationCenterVector_, i, v);
+  }
 
-  template <typename IndexType>
-  double getTriggerDiscriminationCenter(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::TriggerDiscriminationCenterVector_, i); }
+  template <typename SelectorType> void setTriggerDiscriminationCenterToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::TriggerDiscriminationCenterVector_, v, selector);
+  }
+
+  template <typename IndexType> double getTriggerDiscriminationCenter(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::TriggerDiscriminationCenterVector_, i);
+  }
 
   void resetTriggerDiscriminationCenterVector(double v)
-  { resetTable(&VDeviceSimulation::TriggerDiscriminationCenterVector_, v); }
+  {
+    resetTable(&VDeviceSimulation::TriggerDiscriminationCenterVector_, v);
+  }
 
-  template <typename IndexType>
-  void setTriggerDiscriminationSigma(IndexType i, double v)
-  { setTableValue(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, i, v); }
+  template <typename IndexType> void setTriggerDiscriminationSigma(IndexType i, double v)
+  {
+    setTableValue(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, i, v);
+  }
 
-  template <typename SelectorType>
-  void setTriggerDiscriminationSigmaToSelected(double v, SelectorType selector)
-  { setTableValueToSelected(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, v, selector); }
+  template <typename SelectorType> void setTriggerDiscriminationSigmaToSelected(double v, SelectorType selector)
+  {
+    setTableValueToSelected(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, v, selector);
+  }
 
-  template <typename IndexType>
-  double getTriggerDiscriminationSigma(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, i); }
+  template <typename IndexType> double getTriggerDiscriminationSigma(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, i);
+  }
 
   void resetTriggerDiscriminationSigmaVector(double v)
-  { resetTable(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, v); }
+  {
+    resetTable(&VDeviceSimulation::TriggerDiscriminationSigmaVector_, v);
+  }
 
-  template <typename IndexType>
-  PixelID getPixelID(IndexType i) const
-  { return getTableValue(&VDeviceSimulation::PixelIDVector_, i); }
+  template <typename IndexType> PixelID getPixelID(IndexType i) const
+  {
+    return getTableValue(&VDeviceSimulation::PixelIDVector_, i);
+  }
 
   virtual void initializeTables() = 0;
 
@@ -181,7 +209,7 @@ public:
   void setTimingResolutionForEnergyMeasurement(double val) { TimeResolutionSlow_ = val; }
   double TimingResolutionForEnergyMeasurement() const { return TimeResolutionSlow_; }
 
-  void enablePedestal(bool b=true) { pedestalEnabled_ = b; }
+  void enablePedestal(bool b = true) { pedestalEnabled_ = b; }
   bool isPedestalEnabled() const { return pedestalEnabled_; }
 
   void makeDetectorHits();
@@ -193,41 +221,31 @@ public:
   void makeDetectorHitsAtTime(double time_triggered, int time_group);
 
   virtual void applyQuenching(DetectorHit_sptr hit) const;
-  
-  virtual void instantiateRecombinationModel(const std::string &/*config_filename*/){}
+
+  virtual void setRecombinationModel(std::unique_ptr<VLArRecombinationModel>&& /*model*/) {}
   virtual const VLArRecombinationModel* recombinationModel() const { return nullptr; }
-  virtual void applyRecombination(DetectorHit_sptr &/*hit*/) {}
-  
-  virtual double calculateEnergyCharge(const PixelID& pixel,
-                                       double energyDeposit,
-                                       double x, double y, double z) const = 0;
+  virtual void applyRecombination(DetectorHit_sptr& /*hit*/) const {}
+
+  virtual double calculateEnergyCharge(const PixelID& pixel, double energyDeposit, double x, double y,
+                                       double z) const = 0;
   virtual std::tuple<double, double> calculateEPI(double energyCharge, const PixelID& pixel) const = 0;
   void makeEPI(DetectorHit_sptr hit);
 
   void makePhotonCount();
   std::tuple<double, double> applyNoiseToPhotonCount(double photonCount);
 
-  void setPhotonNoiseParam0(double param0) {
-    photonNoiseParam0_ = param0;
-  }
-  double PhotonNoiseParam0() const {
-    return photonNoiseParam0_;
-  }
-  void setPhotonNoiseParam1(double param1) {
-    photonNoiseParam1_ = param1;
-  }
-  double PhotonNoiseParam1() const {
-    return photonNoiseParam1_;
-  }
-  void setPhotonNoiseParam2(double param2) {
-    photonNoiseParam2_ = param2;
-  }
-  double PhotonNoiseParam2() const {
-    return photonNoiseParam2_;
-  }
-  void setPhotonEfficiency(double photonEfficiency) { photonEfficiency_ = photonEfficiency; }
-  virtual double PhotonEfficiency(double /*x*/, double /*y*/, double /*z*/) const { return photonEfficiency_; }
+  void setPhotonNoiseParam0(double param0) { photonNoiseParam0_ = param0; }
+  double PhotonNoiseParam0() const { return photonNoiseParam0_; }
+  void setPhotonNoiseParam1(double param1) { photonNoiseParam1_ = param1; }
+  double PhotonNoiseParam1() const { return photonNoiseParam1_; }
+  void setPhotonNoiseParam2(double param2) { photonNoiseParam2_ = param2; }
+  double PhotonNoiseParam2() const { return photonNoiseParam2_; }
+  void setPhotonEfficiency(double photonEfficiency); // uniform distribution
+  void setPhotonEfficiency(std::unique_ptr<TF1>&& photonEfficiency); // function of local position in cm
+  virtual double PhotonEfficiency(double x, double y, double z) const;
 
+  void setPhotonThreshold(double threshold) { photonThreshold_ = threshold; }
+  double PhotonThreshold() const { return photonThreshold_; }
 
   bool checkTriggerDiscrimination(double energyCharge, const PixelID& pixel) const;
 
@@ -235,7 +253,7 @@ public:
   void fillPixel(DetectorHit_sptr hit) const;
 
   virtual void printSimulationParameters(std::ostream& os) const = 0;
-  
+
   void insertRawHit(DetectorHit_sptr hit) { RawHits_.push_back(hit); }
 
   void assignLocalDepth(DetectorHit_sptr hit) const;
@@ -244,53 +262,46 @@ public:
 protected:
   virtual bool checkRange(const PixelID& pixel) const = 0;
   virtual int IndexOfTable(const PixelID& pixel) const = 0;
-  virtual int IndexOfTable(const SectionChannelPair& channel) const
-  { return IndexOfTable(ChannelToPixel(channel)); }
+  virtual int IndexOfTable(const SectionChannelPair& channel) const { return IndexOfTable(ChannelToPixel(channel)); }
   virtual int SizeOfTable() const = 0;
   virtual PixelID TableIndexToPixelID(int index) const = 0;
 
-  template <typename IndexType>
-  void setPixelID(IndexType i, PixelID v)
-  { setTableValue(&VDeviceSimulation::PixelIDVector_, i, v); }
+  template <typename IndexType> void setPixelID(IndexType i, PixelID v)
+  {
+    setTableValue(&VDeviceSimulation::PixelIDVector_, i, v);
+  }
 
   int NumberOfRawHits() const { return RawHits_.size(); }
   DetectorHit_sptr getRawHit(int i) { return RawHits_[i]; }
   DetectorHitVector& getRawHits() { return RawHits_; }
 
-  void insertSimulatedHit(DetectorHit_sptr hit)
-  { SimulatedHits_.push_back(hit); }
-
 private:
   virtual void simulatePulseHeights() = 0;
-  
+
   void sortHitsInTimeOrder(std::list<DetectorHit_sptr>& hits);
 
   void removeHitsOutOfPixelRange(std::list<DetectorHit_sptr>& hits);
   void removeHitsAtChannelsDisabled(std::list<DetectorHit_sptr>& hits);
   void removeHitsBelowThresholds(std::list<DetectorHit_sptr>& hits);
   virtual void mergeHits(std::list<DetectorHit_sptr>& hits);
-  void mergeHitsIfCoincident(double time_width,
-                             std::list<DetectorHit_sptr>& hits);
+  void mergeHitsIfCoincident(double time_width, std::list<DetectorHit_sptr>& hits);
 
   void performTriggerDiscrimination();
 
-  std::list<DetectorHit_sptr> generatePedestalSignals(int time_group,
-                                                      double time_of_signal) const;
+  std::list<DetectorHit_sptr> generatePedestalSignals(int time_group, double time_of_signal) const;
 
 protected:
   template <typename ObjectType, typename ValueType, typename IndexType>
-  void setTableValue(std::vector<ValueType> ObjectType::*table,
-                     IndexType index, ValueType v)
+  void setTableValue(std::vector<ValueType> ObjectType::* table, IndexType index, ValueType v)
   {
     (static_cast<ObjectType*>(this)->*table)[IndexOfTable(index)] = v;
   }
 
   template <typename ObjectType, typename ValueType, typename SelectorType>
-  void setTableValueToSelected(std::vector<ValueType> ObjectType::*table,
-                               ValueType v, SelectorType selector)
+  void setTableValueToSelected(std::vector<ValueType> ObjectType::* table, ValueType v, SelectorType selector)
   {
     const int N = SizeOfTable();
-    for (int i=0; i<N; i++) {
+    for (int i = 0; i < N; i++) {
       PixelID pixel = PixelIDVector_[i];
       if (selector(pixel)) {
         (static_cast<ObjectType*>(this)->*table)[i] = v;
@@ -299,15 +310,13 @@ protected:
   }
 
   template <typename ObjectType, typename ValueType>
-  void resetTable(std::vector<ValueType> ObjectType::*table,
-                  ValueType v)
+  void resetTable(std::vector<ValueType> ObjectType::* table, ValueType v)
   {
     (static_cast<ObjectType*>(this)->*table).assign(SizeOfTable(), v);
   }
 
   template <typename ObjectType, typename ValueType, typename IndexType>
-  ValueType getTableValue(std::vector<ValueType> ObjectType::*table,
-                          IndexType index) const
+  ValueType getTableValue(std::vector<ValueType> ObjectType::* table, IndexType index) const
   {
     return (static_cast<const ObjectType*>(this)->*table)[IndexOfTable(index)];
   }
@@ -331,11 +340,14 @@ private:
   double TimeResolutionSlow_;
 
   bool pedestalEnabled_;
-  
-  double photonEfficiency_ = 1.0;
+
+  double photonEfficiencyUniform_ = 1.0;
+  std::unique_ptr<TF1> photonEfficiencyFunction_;
   double photonNoiseParam0_ = 0.0;
   double photonNoiseParam1_ = 0.0;
   double photonNoiseParam2_ = 0.0;
+
+  double photonThreshold_ = -std::numeric_limits<double>::infinity();
 
   std::vector<DetectorHit_sptr> RawHits_;
   std::list<DetectorHit_sptr> SimulatedHits_;

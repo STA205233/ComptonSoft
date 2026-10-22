@@ -100,6 +100,7 @@ private:
   float real_posz_ = 0.0;
   float edep_ = 0.0;
   float echarge_ = 0.0;
+  float dedx_ = 0.0;
   uint32_t process_ = 0u;
   // reconstructed
   float energy_ = 0.0;

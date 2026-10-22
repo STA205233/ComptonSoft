@@ -27,13 +27,14 @@
 #include <string>
 
 namespace comptonsoft {
-struct RecombinationResult {
+struct RecombinationResult
+{
   int photonYield;
   int electronYield;
   double electronEnergy;
   double recombinationSurvivingRate;
   int totalQuanta;
-  };
+};
 /**
  * A base class for LAr recombination model.
  * @author Shota Arai
@@ -43,23 +44,24 @@ struct RecombinationResult {
  * std::mt19937
  */
 
-
-class VLArRecombinationModel {
+class VLArRecombinationModel
+{
 public:
   VLArRecombinationModel();
-  VLArRecombinationModel(const std::string &name, const std::map<std::string, double> &params);
-  VLArRecombinationModel(const std::string &name);
+  VLArRecombinationModel(const std::string& name, const std::map<std::string, double>& params);
+  VLArRecombinationModel(const std::string& name);
   virtual ~VLArRecombinationModel();
 
   // Pure virtual function to calculate recombination energy
   /**
-    * @brief Calculation of Recombination
-    */
+   * @brief Calculation of Recombination
+   */
   virtual RecombinationResult calculateRecombination(double energy, double dx, double electricField, double dedx = -1);
-  
+
   virtual double recombinationRate(double dedx, double electricField) const = 0;
 
-  double lightYield(double edep, double recombination_factor) const {
+  double lightYield(double edep, double recombination_factor) const
+  {
     if (edep <= 0.0) {
       return 0.0;
     }
@@ -67,13 +69,17 @@ public:
     const double light = total_quanta - recombination_factor * edep / Wion();
     return std::max(light, 0.0);
   }
-  
+
+  RecombinationResult calcResultWithoutRandomization(double edep, double rate) const;
+
   std::string name() const { return name_; }
-  virtual void printInfo(std::ostream &os) const;
+  virtual void printInfo(std::ostream& os) const;
   int RandomizeMode() const { return randomizeMode_; }
   void setRandomizeMode(int mode) { randomizeMode_ = mode; }
   double FanoFactor() const { return fanoFactor_; }
   void setFanoFactor(double fano) { fanoFactor_ = fano; }
+  double SigmaP() const { return sigmaP_; }
+  void setSigmaP(double sigma_p) { sigmaP_ = sigma_p; }
 
   double Wion() const { return Wion_; } /// Ionization energy of LAr
   double Wexc() const { return Wexc_; } /// Excitation energy of LAr
@@ -81,16 +87,16 @@ public:
   double IonExitonRatio() const { return ionExitonRatio_; }
 
 private:
-  void calAlpha() {
-     ionExitonRatio_ = Wion_ / Wexc_ - 1.0;
-  }
+  void calAlpha() { ionExitonRatio_ = Wion_ / Wexc_ - 1.0; }
   std::string name_ = "VLArRecombinationModel";
   double Wion_ = 23.6 * CLHEP::eV; // in eV
   double Wexc_ = 19.6 * CLHEP::eV; // in eV
   double ionExitonRatio_ = Wion_ / Wexc_ - 1.0;
   double rho_ = 1.39 * (CLHEP::g / CLHEP::cm3); // in g/cm^3
-  int randomizeMode_ = 0; // 0: no randomization, 1: Binomial
-  double fanoFactor_ = 0.107; // Fano factor for LAr // Referece: Bonivento, W. M. and Terranova, F., "The science and technology of liquid argon detectors", 2024,
+  int randomizeMode_ = 0;                       // 0: no randomization, 1: Binomial
+  double fanoFactor_ = 0.107; // Fano factor for LAr // Referece: Bonivento, W. M. and Terranova, F., "The science and
+                              // technology of liquid argon detectors", 2024,
+  double sigmaP_ = 0.06;
   std::mt19937 rng_;
   uint32_t seed_ = 0;
 
@@ -98,4 +104,4 @@ protected:
   int Binomial(int n, double p);
 };
 } // namespace comptonsoft
-#endif //COMPTONSOFT_VLArRecombinationModel_H
+#endif // COMPTONSOFT_VLArRecombinationModel_H

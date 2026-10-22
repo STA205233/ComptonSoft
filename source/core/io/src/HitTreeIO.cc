@@ -76,6 +76,7 @@ void HitTreeIO::define_branches()
   hittree_->Branch("real_posz",        &real_posz_,        "real_posz/F");
   hittree_->Branch("edep",             &edep_,             "edep/F");
   hittree_->Branch("echarge",          &echarge_,          "echarge/F");
+  hittree_->Branch("dedx",             &dedx_,             "dedx/F");
   hittree_->Branch("process",          &process_,          "process/i");
 
   // reconstructed
@@ -138,6 +139,7 @@ void HitTreeIO::set_branch_addresses()
   hittree_->SetBranchAddress("real_posz",        &real_posz_);
   hittree_->SetBranchAddress("edep",             &edep_);
   hittree_->SetBranchAddress("echarge",          &echarge_);
+  hittree_->SetBranchAddress("dedx",             &dedx_);
   hittree_->SetBranchAddress("process",          &process_);
 
   // reconstructed
